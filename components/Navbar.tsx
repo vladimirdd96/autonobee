@@ -9,7 +9,6 @@ import { HoverGlowEffect } from './aceternity/hover-glow-effect';
 const navItems = [
   { name: 'Home', link: '/' },
   { name: 'Dashboard', link: '/dashboard' },
-  { name: 'Chat', link: '/chat' },
 ];
 
 export default function Navbar() {
@@ -23,7 +22,7 @@ export default function Navbar() {
         <FloatingNavbar navItems={navItems} />
         
         <div className="flex gap-4 relative z-40">
-          <MovingBorder borderRadius="0.5rem" containerClassName="p-0.5">
+          <MovingBorder borderRadius="0.5rem" containerClassName="p-1.5">
             <Link 
               href="/sign-up" 
               className="px-4 py-2 bg-background text-primary rounded-md hover:bg-background/90 transition-colors font-medium"

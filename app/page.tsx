@@ -7,7 +7,6 @@ import { AuroraBackground } from "@/components/aceternity/aurora-background";
 import { AnimatedGradientText } from "@/components/aceternity/animated-gradient-text";
 import { ParallaxScroll } from "@/components/aceternity/parallax-scroll";
 import { HoverGlowEffect } from "@/components/aceternity/hover-glow-effect";
-import { MovingBorder } from "@/components/aceternity/moving-border";
 import { TextRevealCard } from "@/components/aceternity/text-reveal-card";
 import { CardContainer, CardBody, CardItem } from "@/components/aceternity/3d-card";
 
@@ -42,18 +41,12 @@ export default function Home() {
                   Dive into the future of content creation. Harness the power of artificial intelligence to craft messages that resonate, engage, and convert.
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <MovingBorder 
-                    borderRadius="0.5rem" 
-                    className="px-6 py-3"
-                    containerClassName="w-fit"
+                  <Link 
+                    href="/dashboard" 
+                    className="bg-[#f9b72d] text-[#000000] font-medium px-6 py-3 rounded-md transition-transform hover:scale-105 active:scale-95 whitespace-nowrap"
                   >
-                    <Link 
-                      href="/dashboard" 
-                      className="whitespace-nowrap"
-                    >
-                      Take Your Journey Today
-                    </Link>
-                  </MovingBorder>
+                    Take Your Journey Today
+                  </Link>
                 </div>
               </div>
               <div className="md:w-1/2 relative">
@@ -188,26 +181,26 @@ export default function Home() {
               </p>
               
               <div className="mt-8">
-                <MovingBorder borderRadius="0.5rem" containerClassName="inline-block p-0.5 mb-3">
+                <div className="inline-block mb-3">
                   <div className="px-4 py-2 bg-background text-primary flex items-center space-x-2 rounded-md">
                     <span className="text-xl">✓</span>
                     <span>Advanced content analytics</span>
                   </div>
-                </MovingBorder>
+                </div>
                 
-                <MovingBorder borderRadius="0.5rem" containerClassName="inline-block p-0.5 mb-3 ml-4">
+                <div className="inline-block mb-3 ml-4">
                   <div className="px-4 py-2 bg-background text-primary flex items-center space-x-2 rounded-md">
                     <span className="text-xl">✓</span>
                     <span>Real-time insights</span>
                   </div>
-                </MovingBorder>
+                </div>
                 
-                <MovingBorder borderRadius="0.5rem" containerClassName="inline-block p-0.5">
+                <div className="inline-block">
                   <div className="px-4 py-2 bg-background text-primary flex items-center space-x-2 rounded-md">
                     <span className="text-xl">✓</span>
                     <span>Intuitive visualization</span>
                   </div>
-                </MovingBorder>
+                </div>
               </div>
             </div>
           </div>
@@ -298,7 +291,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {pricingPlans.map((plan, index) => (
               <HoverGlowEffect key={index} containerClassName={plan.isPopular ? "transform -translate-y-4" : ""}>
-                <div className="pricing-card relative bg-background/30 backdrop-blur-sm p-6 rounded-xl border border-accent/10">
+                <div className="pricing-card relative bg-background/30 backdrop-blur-sm p-6 rounded-xl border border-accent/10 h-full flex flex-col min-h-[460px]">
                   {plan.isPopular && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-background px-4 py-1 rounded-full text-sm font-medium">
                       Most Popular
@@ -310,19 +303,17 @@ export default function Home() {
                     <span className="text-accent/70 ml-1">{plan.period}</span>
                   </div>
                   <p className="text-accent/80 text-sm mb-6">{plan.description}</p>
-                  <ul className="space-y-2 mb-6 text-left">
+                  <ul className="space-y-3 mb-6 text-left flex-grow">
                     {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center">
-                        <span className="text-primary mr-2">✓</span>
+                      <li key={idx} className="flex items-center min-h-[24px]">
+                        {feature.trim() && <span className="text-primary mr-2">✓</span>}
                         <span className="text-accent/80 text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <MovingBorder borderRadius="0.5rem" containerClassName="p-0.5">
-                    <button className="w-full py-2 px-4 rounded-md bg-background hover:bg-primary/10 text-primary transition-colors font-medium">
-                      {plan.buttonText}
-                    </button>
-                  </MovingBorder>
+                  <button className="w-full py-3 px-4 rounded-md bg-[#f9b72d] text-[#000000] hover:bg-[#f9b72d]/90 transition-colors font-medium mt-auto">
+                    {plan.buttonText}
+                  </button>
                 </div>
               </HoverGlowEffect>
             ))}
@@ -370,14 +361,74 @@ export default function Home() {
               </HoverGlowEffect>
             </div>
             
-            <MovingBorder borderRadius="0.5rem" containerClassName="inline-block p-0.5">
-              <Link 
-                href="/sign-up" 
-                className="px-8 py-4 bg-background text-primary rounded-md hover:bg-background/90 transition-colors font-medium text-lg inline-block"
-              >
-                Get Started Today
-              </Link>
-            </MovingBorder>
+            {/* Platform Features */}
+            <div className="mb-10 max-w-2xl mx-auto">
+              <h3 className="text-xl font-semibold text-primary mb-4">Platforms We Support</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-accent/5 backdrop-blur-sm border border-accent/10 rounded-lg p-4 text-left">
+                  <h4 className="font-semibold text-accent mb-2">Available Now</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center">
+                      <span className="text-primary mr-2">✓</span>
+                      <span className="text-accent/80 text-sm flex items-center">
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                        X (Twitter) AI Content Generation
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="text-primary mr-2">✓</span>
+                      <span className="text-accent/80 text-sm flex items-center">
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm3.5 13.5l-1 1c-.3.3-.7.5-1.2.5s-.9-.2-1.2-.5l-1-1c-.3-.3-.5-.7-.5-1.2s.2-.9.5-1.2l1-1c.3-.3.7-.5 1.2-.5s.9.2 1.2.5l1 1c.3.3.5.7.5 1.2s-.2.9-.5 1.2zM12 6c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z" />
+                        </svg>
+                        Scheduled Posting
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-accent/5 backdrop-blur-sm border border-accent/10 rounded-lg p-4 text-left">
+                  <h4 className="font-semibold text-accent mb-2">Coming Soon</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center">
+                      <span className="text-primary/70 mr-2">→</span>
+                      <span className="text-accent/80 text-sm flex items-center">
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2c2.717 0 3.056.01 4.122.06 1.065.05 1.79.217 2.428.465.66.254 1.216.598 1.772 1.153a4.908 4.908 0 0 1 1.153 1.772c.247.637.415 1.363.465 2.428.047 1.066.06 1.405.06 4.122 0 2.717-.01 3.056-.06 4.122-.05 1.065-.218 1.79-.465 2.428a4.883 4.883 0 0 1-1.153 1.772 4.915 4.915 0 0 1-1.772 1.153c-.637.247-1.363.415-2.428.465-1.066.047-1.405.06-4.122.06-2.717 0-3.056-.01-4.122-.06-1.065-.05-1.79-.218-2.428-.465a4.89 4.89 0 0 1-1.772-1.153 4.904 4.904 0 0 1-1.153-1.772c-.248-.637-.415-1.363-.465-2.428C2.013 15.056 2 14.717 2 12c0-2.717.01-3.056.06-4.122.05-1.066.217-1.79.465-2.428a4.88 4.88 0 0 1 1.153-1.772A4.897 4.897 0 0 1 5.45 2.525c.638-.248 1.362-.415 2.428-.465C8.944 2.013 9.283 2 12 2zm0 1.802c-2.67 0-2.987.01-4.04.059-.976.045-1.505.207-1.858.344-.466.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.048 1.053-.059 1.37-.059 4.04 0 2.668.01 2.985.059 4.038.044.976.207 1.505.344 1.858.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.059 4.04.059 2.668 0 2.985-.01 4.039-.059.976-.044 1.504-.207 1.858-.344.465-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.054.059-1.37.059-4.039 0-2.67-.01-2.987-.059-4.04-.044-.976-.207-1.505-.344-1.858a3.097 3.097 0 0 0-.748-1.15 3.098 3.098 0 0 0-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.054-.048-1.37-.059-4.04-.059zm0 3.064A5.135 5.135 0 0 1 17.135 12 5.135 5.135 0 0 1 12 17.135 5.135 5.135 0 0 1 6.865 12 5.135 5.135 0 0 1 12 6.865zm0 1.802a3.333 3.333 0 1 0 0 6.666 3.333 3.333 0 0 0 0-6.666zm5.338-3.205a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z" />
+                        </svg>
+                        Instagram Integration
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="text-primary/70 mr-2">→</span>
+                      <span className="text-accent/80 text-sm flex items-center">
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                        Facebook Integration
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="text-primary/70 mr-2">→</span>
+                      <span className="text-accent/80 text-sm flex items-center">
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+                        </svg>
+                        TikTok Integration
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <Link 
+              href="/sign-up" 
+              className="px-8 py-4 bg-[#f9b72d] text-[#000000] rounded-md hover:bg-[#f9b72d]/90 transition-colors font-medium text-lg inline-block"
+            >
+              Get Started Today
+            </Link>
           </div>
         </div>
       </section>
@@ -390,75 +441,78 @@ const testimonials = [
     avatar: "👩‍💼",
     name: "Sarah Johnson",
     title: "Marketing Director",
-    quote: "AutonoBee has revolutionized our content strategy. We&apos;re creating twice the content in half the time, with even better results!"
+    quote: "AutonoBee has completely transformed how our team creates content. I'm genuinely amazed at how it's cut our production time in half while improving quality. The AI understands our brand voice perfectly - I couldn't imagine going back to our old process!"
   },
   {
     avatar: "👨‍💻",
     name: "David Chen",
     title: "Content Creator",
-    quote: "As someone who writes daily, AutonoBee has become my secret weapon. The AI suggestions are uncannily good."
+    quote: "Words cannot express how grateful I am for discovering AutonoBee. As someone who writes daily, it's not just a tool but a true creative partner. The quality of content it helps me produce has literally doubled my client base in three months."
   },
   {
     avatar: "👩‍🎓",
     name: "Emma Rodriguez",
     title: "Freelance Writer",
-    quote: "I&apos;ve tried many AI writing tools, but AutonoBee stands apart with its intuitive interface and powerful capabilities."
+    quote: "I've tried every AI writing tool on the market, and AutonoBee is truly in a league of its own. It's like they read my mind! The thoughtfulness behind every feature shows they truly understand what writers need. Absolutely life-changing for my business."
   },
   {
     avatar: "👨‍🚀",
     name: "Michael Lee",
     title: "Startup Founder",
-    quote: "AutonoBee helped our small team punch above our weight with professional content that engages our audience effectively."
+    quote: "Finding AutonoBee was the turning point for our content strategy. With limited resources, we now produce enterprise-quality content that connects deeply with our audience. I'm honestly blown away by how it's accelerated our growth. Worth every penny and more!"
   },
   {
     avatar: "👩‍💻",
     name: "Jennifer Kim",
     title: "Digital Marketer",
-    quote: "The analytics and optimization suggestions have improved our engagement metrics by over 45% in just two months."
+    quote: "I can't thank the AutonoBee team enough! Their platform increased our engagement by 68% and cut our content creation costs by a third. The analytics are so insightful that we've completely redesigned our strategy based on them. This tool is absolutely indispensable."
   },
 ];
 
 const pricingPlans = [
   {
     name: "Starter",
-    price: "$9",
-    period: "per month",
-    description: "Perfect for individuals and small projects",
+    price: "FREE",
+    period: "enjoy",
+    description: "Perfect for creators just beginning their journey",
     features: [
-      "1,000 AI generations per month",
-      "5 saved templates",
-      "Basic content analytics",
-      "Email support"
+      "500 AI-powered posts per month",
+      "Smart caption generator for X",
+      "Viral hashtag recommendations",
+      "Post scheduling (up to 7 days)",
+      "Real-time engagement analytics"
     ],
     buttonText: "Get Started",
     isPopular: false
   },
   {
     name: "Professional",
-    price: "$29",
-    period: "per month",
-    description: "Ideal for professionals and growing businesses",
+    price: "FREE",
+    period: "enjoy",
+    description: "Elevate your social presence to the next level",
     features: [
-      "Unlimited AI generations",
-      "25 saved templates",
-      "Advanced content analytics",
-      "Priority support",
-      "SEO optimization tools"
+      "Unlimited AI-powered content creation",
+      "Advanced audience sentiment analysis",
+      "Competitor content insights",
+      "Unlimited post scheduling",
+      "Engagement-optimized posting times",
+      "Trend prediction & content suggestions"
     ],
     buttonText: "Try Professional",
     isPopular: true
   },
   {
     name: "Enterprise",
-    price: "$99",
-    period: "per month",
-    description: "For teams and large-scale content operations",
+    price: "Coming Soon",
+    period: "",
+    description: "Complete solution for teams and agencies",
     features: [
-      "Unlimited everything",
-      "Team collaboration tools",
-      "Custom AI training",
-      "Dedicated account manager",
-      "API access"
+      "Everything in Professional",
+      "Multi-user collaboration workspace",
+      "Brand voice customization",
+      "AI trained on your highest-performing content",
+      "Advanced ROI & conversion tracking",
+      "Dedicated success manager"
     ],
     buttonText: "Contact Sales",
     isPopular: false

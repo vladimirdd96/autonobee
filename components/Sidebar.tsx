@@ -54,14 +54,14 @@ export default function Sidebar() {
           <div className="p-4 rounded-lg bg-primary/10">
             <h3 className="text-primary font-display mb-2 flex items-center">
               <Sparkles className="mr-2 h-5 w-5 text-primary" />
-              AUTONOBEE PRO
+              AutonoBee Pro
             </h3>
             <p className="text-sm text-accent/80 mb-3">
-              Upgrade to access advanced AI features
+              Professional Features are active for all users until 31st of April 2025
             </p>
-            <button className="w-full py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors">
-              Upgrade Now
-            </button>
+            <div className="w-full py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors flex justify-center items-center">
+              Activated
+            </div>
           </div>
         </div>
       </div>
