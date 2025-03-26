@@ -53,6 +53,8 @@ export class XApiAuth {
   refreshInterval: number;
   tokenExpiry: number;
   rateLimitManager: RateLimitManager;
+  accessToken: string;
+  accessTokenSecret: string;
 
   constructor() {
     // Initialize API credentials from environment variables
@@ -62,12 +64,19 @@ export class XApiAuth {
     this.clientId = process.env.NEXT_PUBLIC_X_CLIENT_ID || '';
     this.clientSecret = process.env.NEXT_PUBLIC_X_CLIENT_SECRET || '';
     
-    // Use ngrok URL if available, otherwise use the app URL
-    const baseUrl = process.env.NGROK_STATIC_DOMAIN 
-      ? `https://${process.env.NGROK_STATIC_DOMAIN}` 
-      : process.env.NEXT_PUBLIC_APP_URL;
+    // Add OAuth 1.0a access tokens
+    this.accessToken = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
+    this.accessTokenSecret = process.env.NEXT_PUBLIC_ACCESS_TOKEN_SECRET || '';
     
-    this.callbackUrl = `${baseUrl}/api/auth/x/callback`;
+    // Use ngrok URL if available, otherwise use the app URL
+    const baseUrl = process.env.NEXT_PUBLIC_NGROK_STATIC_DOMAIN 
+      ? `https://${process.env.NEXT_PUBLIC_NGROK_STATIC_DOMAIN}` 
+      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Make sure the callback URL uses HTTPS, which X requires
+    this.callbackUrl = baseUrl.startsWith('http:')
+      ? `https://${new URL(baseUrl).host}/api/auth/x/callback`
+      : `${baseUrl}/api/auth/x/callback`;
     
     // Token store for managing user tokens
     this.tokenStore = new Map();
@@ -291,83 +300,277 @@ export class XApiAuth {
     }
   }
 
-  // Make Authenticated Request
-  async makeAuthenticatedRequest(endpoint: string, method = 'GET', data = null, userId: string | null = null): Promise<any> {
-    let headers: any = {};
+  // Add utility method to create OAuth 1.0a signature
+  createOAuth1Signature(method: string, url: string, params: Record<string, string> = {}): Record<string, string> {
+    // Create an OAuth 1.0a signature
+    // This is a simplified implementation; in production, use a library like oauth-1.0a
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const nonce = crypto.randomBytes(16).toString('hex');
     
-    if (userId) {
-      // Use user context authentication
-      const tokens = await this.getUserTokens(userId);
-      if (!tokens) {
-        throw new AuthError('User not authenticated', 'USER_NOT_AUTHENTICATED');
-      }
-      headers.Authorization = `Bearer ${tokens.access_token}`;
-    } else {
-      // Use app-only authentication
-      headers.Authorization = `Bearer ${this.bearerToken}`;
-    }
+    // Base oauth parameters
+    const oauthParams: Record<string, string> = {
+      oauth_consumer_key: this.apiKey,
+      oauth_nonce: nonce,
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: timestamp,
+      oauth_token: this.accessToken,
+      oauth_version: '1.0'
+    };
+    
+    // Combine all parameters for the signature
+    const allParams = { ...oauthParams, ...params };
+    
+    // Create the parameter string
+    const paramString = Object.keys(allParams)
+      .sort()
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(allParams[key])}`)
+      .join('&');
+    
+    // Create the signature base string
+    const signatureBaseString = [
+      method.toUpperCase(),
+      encodeURIComponent(url),
+      encodeURIComponent(paramString)
+    ].join('&');
+    
+    // Create the signing key
+    const signingKey = `${encodeURIComponent(this.apiKeySecret)}&${encodeURIComponent(this.accessTokenSecret)}`;
+    
+    // Generate the signature
+    const signature = crypto
+      .createHmac('sha1', signingKey)
+      .update(signatureBaseString)
+      .digest('base64');
+    
+    return {
+      ...oauthParams,
+      oauth_signature: signature
+    };
+  }
 
-    // Check rate limits
-    if (!this.rateLimitManager.canMakeRequest(endpoint)) {
-      throw new AuthError('Rate limit exceeded', 'RATE_LIMIT');
-    }
+  // Create OAuth 1.0a authorization header
+  createOAuth1Header(method: string, url: string, params: Record<string, string> = {}): string {
+    const oauthParams = this.createOAuth1Signature(method, url, params);
+    
+    // Format as Authorization header
+    return 'OAuth ' + Object.keys(oauthParams)
+      .filter(k => k.startsWith('oauth_'))
+      .map(k => `${encodeURIComponent(k)}="${encodeURIComponent(oauthParams[k])}"`)
+      .join(', ');
+  }
 
+  // Make an authenticated request specifically using OAuth 1.0a
+  async makeOAuth1Request(endpoint: string, method = 'GET', data = null): Promise<any> {
     // Determine which API version to use
-    // Trends endpoints use v1.1, everything else uses v2
     const isV1Endpoint = endpoint.startsWith('trends/') || endpoint.startsWith('geo/') || endpoint.includes('trends');
     const apiVersion = isV1Endpoint ? '1.1' : '2';
     const apiUrl = `https://api.twitter.com/${apiVersion}/${endpoint}`;
     
-    console.log(`[XApiAuth] Making request to: ${apiUrl}`, { 
+    // Convert data to Record<string, string> if needed
+    const paramsForSignature: Record<string, string> = {};
+    if (data && typeof data === 'object') {
+      Object.entries(data).forEach(([key, value]) => {
+        paramsForSignature[key] = String(value);
+      });
+    }
+    
+    const headers: any = {
+      Authorization: this.createOAuth1Header(method, apiUrl, method === 'GET' ? paramsForSignature : {})
+    };
+    
+    console.log(`[XApiAuth] Making OAuth 1.0a request to: ${apiUrl}`, { 
       method, 
-      hasHeaders: !!headers, 
-      userId: userId || 'none',
+      hasHeaders: true,
       hasData: !!data 
     });
-
+    
     try {
       const response = await axios({
         method,
         url: apiUrl,
         headers,
-        data
+        params: method === 'GET' ? paramsForSignature : undefined,
+        data: method !== 'GET' ? data : undefined
       });
-
-      // Update rate limits
-      if (response.headers['x-rate-limit-limit']) {
-        this.rateLimitManager.updateLimits(endpoint, response.headers);
-      }
       
-      console.log(`[XApiAuth] Request successful, status: ${response.status}`);
+      console.log(`[XApiAuth] OAuth 1.0a request successful, status: ${response.status}`);
       return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as any;
-      console.error(`[XApiAuth] Request failed: ${axiosError?.response?.status || 'Unknown status'}`, {
-        endpoint,
-        errorMessage: axiosError?.message,
-        responseData: axiosError?.response?.data
-      });
-      
-      if (axiosError?.response?.status === 401 && userId) {
-        console.log('[XApiAuth] 401 error, attempting token refresh');
-        // Token might be expired, try refreshing
-        await this.refreshAccessToken(userId);
-        return this.makeAuthenticatedRequest(endpoint, method, data, userId);
+    } catch (error) {
+      console.error('[XApiAuth] OAuth 1.0a request failed:', error);
+      return this.handleAuthError(error);
+    }
+  }
+
+  // Make Authenticated Request
+  async makeAuthenticatedRequest(endpoint: string, method = 'GET', data = null, userId: string | null = null, useOAuth1 = false): Promise<any> {
+    // For debugging
+    console.log(`[XApiAuth] Making request to: https://api.twitter.com/2/${endpoint} {
+  method: '${method}',
+  hasHeaders: ${!!userId},
+  userId: '${userId || ''}',
+  hasData: ${!!data},
+  authMethod: '${useOAuth1 ? 'OAuth 1.0a' : (userId ? 'OAuth 2.0 User Context' : 'Bearer Token')}'
+}`);
+    
+    try {
+      // If OAuth 1.0a is specified, use that auth method
+      if (useOAuth1) {
+        return await this.makeOAuth1Request(endpoint, method, data);
       }
       
-      // For 400 errors, we should check if this is due to invalid parameters
-      if (axiosError?.response?.status === 400) {
-        const errorData = axiosError.response.data;
-        console.error('[XApiAuth] 400 Bad Request error:', errorData);
+      // If userId is provided, use OAuth 2.0 user context authentication
+      if (userId) {
+        let tokens = await this.getUserTokens(userId);
         
-        // If using v1.1 API and getting errors, try using app-only auth instead
-        if (isV1Endpoint && userId) {
-          console.log('[XApiAuth] Attempting to retry with app-only auth');
-          return this.makeAuthenticatedRequest(endpoint, method, data, null);
+        if (!tokens?.access_token) {
+          throw new AuthError(
+            'No access token available for user context request', 
+            'NO_ACCESS_TOKEN'
+          );
+        }
+        
+        // Check if token is expired or close to expiring
+        const expiresAt = tokens.created_at + (tokens.expires_in * 1000);
+        const now = Date.now();
+        
+        // If token is expired or within 5 minutes of expiring, refresh it
+        if (now > (expiresAt - 300000)) {
+          console.log('Token expired or close to expiring, refreshing...');
+          try {
+            tokens = await this.refreshAccessToken(userId);
+          } catch (refreshError) {
+            console.error('Error refreshing token:', refreshError);
+            
+            // If refresh fails with auth error, try direct OAuth 1.0a
+            if (refreshError instanceof AuthError) {
+              console.log('Falling back to OAuth 1.0a after token refresh failure');
+              return await this.makeOAuth1Request(endpoint, method, data);
+            }
+            
+            throw refreshError;
+          }
+        }
+        
+        const baseURL = 'https://api.twitter.com/2/';
+        
+        // Make the API request
+        try {
+          const response = await axios({
+            method: method,
+            url: `${baseURL}${endpoint}`,
+            data: data,
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`,
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          // Update rate limit info
+          if (response.headers['x-rate-limit-limit']) {
+            this.rateLimitManager.updateLimits(endpoint, response.headers);
+          }
+          
+          return response.data;
+        } catch (requestError: any) {
+          // Handle axios errors with more detail
+          if (requestError.response) {
+            console.log(`[XApiAuth] Request failed: ${requestError.response.status}`, {
+              endpoint,
+              errorMessage: requestError.message,
+              responseData: requestError.response.data
+            });
+            
+            // If unauthorized error, try with OAuth 1.0a as fallback
+            if (requestError.response.status === 401) {
+              console.log('OAuth 2.0 request returned 401, trying OAuth 1.0a as fallback');
+              return await this.makeOAuth1Request(endpoint, method, data);
+            }
+            
+            // Specific error for rate limiting
+            if (requestError.response.status === 429) {
+              throw new AuthError('Rate limit exceeded', 'RATE_LIMIT', requestError.response.data);
+            }
+            
+            // Handle other API errors
+            throw new AuthError(
+              `API error (${requestError.response.status})`, 
+              'API_ERROR',
+              requestError.response.data
+            );
+          }
+          
+          // Network or other errors
+          throw new AuthError(
+            `Request failed: ${requestError.message}`,
+            'REQUEST_FAILED'
+          );
         }
       }
       
-      return this.handleAuthError(error);
+      // Otherwise, use app authentication (bearer token)
+      if (!this.bearerToken) {
+        throw new AuthError('No bearer token available for app-only authentication', 'NO_BEARER_TOKEN');
+      }
+      
+      try {
+        const baseURL = 'https://api.twitter.com/2/';
+        const response = await axios({
+          method: method,
+          url: `${baseURL}${endpoint}`,
+          data: data,
+          headers: {
+            Authorization: `Bearer ${this.bearerToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (response.headers['x-rate-limit-limit']) {
+          this.rateLimitManager.updateLimits(endpoint, response.headers);
+        }
+        
+        return response.data;
+      } catch (appError: any) {
+        if (appError.response) {
+          console.log(`[XApiAuth] App-only request failed: ${appError.response.status}`, {
+            endpoint,
+            errorMessage: appError.message,
+            responseData: appError.response.data
+          });
+          
+          // If unauthorized with bearer token, try OAuth 1.0a as final attempt
+          if (appError.response.status === 401) {
+            console.log('Bearer token request returned 401, trying OAuth 1.0a as final attempt');
+            return await this.makeOAuth1Request(endpoint, method, data);
+          }
+          
+          if (appError.response.status === 429) {
+            throw new AuthError('Rate limit exceeded', 'RATE_LIMIT', appError.response.data);
+          }
+          
+          throw new AuthError(
+            `API error (${appError.response.status})`, 
+            'API_ERROR',
+            appError.response.data
+          );
+        }
+        
+        throw new AuthError(
+          `Request failed: ${appError.message}`,
+          'REQUEST_FAILED'
+        );
+      }
+    } catch (error: any) {
+      // Catch-all for any errors not handled above
+      if (error instanceof AuthError) {
+        throw error; // Re-throw AuthError instances without modification
+      }
+      
+      // Create a general AuthError for anything else
+      throw new AuthError(
+        `Request failed: ${error.message || 'Unknown error'}`,
+        'REQUEST_FAILED',
+        error.response?.data
+      );
     }
   }
 

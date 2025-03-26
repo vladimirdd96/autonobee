@@ -141,13 +141,13 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex flex-1 justify-center px-4 max-w-[600px] space-x-4">
-            <Link href="/" className={`px-4 py-2 rounded-lg transition-all ${
-              pathname === '/' ? 'bg-primary text-background' : 'text-accent hover:bg-primary/20 hover:text-primary'
+            <Link href="/" className={`px-4 py-2 rounded-lg transition-colors ${
+              pathname === '/' ? 'bg-primary text-background' : 'text-accent hover:bg-primary/10'
             }`}>
               Home
             </Link>
-            <Link href="/dashboard" className={`px-4 py-2 rounded-lg transition-all ${
-              pathname === '/dashboard' ? 'bg-primary text-background' : 'text-accent hover:bg-primary/20 hover:text-primary'
+            <Link href="/dashboard" className={`px-4 py-2 rounded-lg transition-colors ${
+              pathname === '/dashboard' ? 'bg-primary text-background' : 'text-accent hover:bg-primary/10'
             }`}>
               Dashboard
             </Link>
@@ -328,20 +328,18 @@ export default function Navbar() {
 
           {/* Mobile Menu */}
           <div className={`
-            fixed top-0 left-0 h-full w-64 bg-background/95 backdrop-blur-md z-40
+            fixed top-0 left-0 h-full w-64 bg-background border-r border-primary/10 z-40
             transform transition-transform duration-300 ease-in-out
             ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-            md:hidden border-r border-primary/10
+            md:hidden
           `}>
             <div className="p-6 pt-20">
               <nav className="space-y-4">
                 <Link
                   href="/"
                   onClick={() => setIsMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg transition-all duration-200 ${
-                    pathname === '/' 
-                      ? 'bg-primary text-background' 
-                      : 'text-accent hover:bg-primary/20 hover:text-primary hover:translate-x-1'
+                  className={`block px-4 py-2 rounded-lg transition-colors ${
+                    pathname === '/' ? 'bg-primary text-background' : 'text-accent hover:bg-primary/10'
                   }`}
                 >
                   Home
@@ -351,10 +349,8 @@ export default function Navbar() {
                 <Link
                   href="/dashboard"
                   onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
-                    pathname === '/dashboard' 
-                      ? 'bg-primary text-background' 
-                      : 'text-accent hover:bg-primary/20 hover:text-primary hover:translate-x-1'
+                  className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                    pathname === '/dashboard' ? 'bg-primary text-background' : 'text-accent hover:bg-primary/10'
                   }`}
                 >
                   <LayoutDashboard className="h-5 w-5 mr-3" />
@@ -367,10 +363,8 @@ export default function Navbar() {
                     key={item.path}
                     href={item.path}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
-                      pathname === item.path 
-                        ? 'bg-primary text-background' 
-                        : 'text-accent hover:bg-primary/20 hover:text-primary hover:translate-x-1'
+                    className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                      pathname === item.path ? 'bg-primary text-background' : 'text-accent hover:bg-primary/10'
                     }`}
                   >
                     <item.icon className="h-5 w-5 mr-3" />

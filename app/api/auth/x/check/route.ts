@@ -5,6 +5,7 @@ export async function GET() {
   const cookieStore = cookies();
   const accessToken = cookieStore.get('x_access_token')?.value;
   const userData = cookieStore.get('x_user')?.value;
+  const authMethod = cookieStore.get('x_auth_method')?.value || 'oauth2'; // Default to OAuth 2.0
   
   if (!accessToken || !userData) {
     return NextResponse.json({ authorized: false });
@@ -16,6 +17,7 @@ export async function GET() {
     
     return NextResponse.json({
       authorized: true,
+      authMethod,
       user: {
         id: user.id,
         name: user.name,
