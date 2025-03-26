@@ -7,15 +7,15 @@ export default function Footer() {
     <footer className="py-10 border-t border-primary/10 mt-20 backdrop-blur-sm bg-background/90">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 text-center md:text-left">
             <Logo />
             <p className="text-accent/60 mt-4 text-sm">
               AI-powered content creation platform tailored for your unique needs.
             </p>
           </div>
           
-          <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-8">
-            <div>
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center md:text-left">
               <h4 className="font-display text-xl mb-4">Features</h4>
               <ul className="space-y-2">
                 <li><Link href="/content-creation" className="text-accent/70 hover:text-primary transition-colors">Content Creation</Link></li>
@@ -24,7 +24,7 @@ export default function Footer() {
               </ul>
             </div>
             
-            <div>
+            <div className="text-center md:text-left">
               <h4 className="font-display text-xl mb-4">Analytics</h4>
               <ul className="space-y-2">
                 <li><Link href="/dashboard" className="text-accent/70 hover:text-primary transition-colors">Dashboard</Link></li>
@@ -32,7 +32,7 @@ export default function Footer() {
               </ul>
             </div>
             
-            <div>
+            <div className="text-center md:text-left">
               <h4 className="font-display text-xl mb-4">Company</h4>
               <ul className="space-y-2">
                 <li><Link href="/team" className="text-accent/70 hover:text-primary transition-colors">Team</Link></li>

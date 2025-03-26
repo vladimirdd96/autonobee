@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, Bot } from 'lucide-react';
 
 interface Message {
@@ -11,6 +11,7 @@ interface Message {
 }
 
 export default function ChatBox() {
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, isUser: false, text: "Hello! How can I assist you today?", timestamp: new Date(Date.now() - 3600000) },
     { id: 2, isUser: true, text: "I need help creating content for my social media.", timestamp: new Date(Date.now() - 3500000) },
@@ -46,17 +47,27 @@ export default function ChatBox() {
     }, 1000);
   };
   
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
     <div className="flex flex-col h-full bg-background border border-grayDark rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-grayDark flex items-center">
+      <div className="flex-none p-4 border-b border-grayDark flex items-center">
         <Bot className="text-primary w-5 h-5 mr-2" />
         <h2 className="text-lg font-semibold text-accent">AI Assistant</h2>
       </div>
       
-      <div className="flex-grow overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages.map((message) => (
           <div 
-            key={message.id} 
+            key={message.timestamp.toISOString()} 
             className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
           >
             <div 
@@ -66,7 +77,7 @@ export default function ChatBox() {
                   : 'bg-grayDark text-accent rounded-tl-none'
               }`}
             >
-              <p>{message.text}</p>
+              <p className="break-words">{message.text}</p>
               <span className="text-xs opacity-70 mt-1 block">
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -75,7 +86,7 @@ export default function ChatBox() {
         ))}
       </div>
       
-      <div className="p-4 border-t border-grayDark">
+      <div className="flex-none p-4 border-t border-grayDark">
         <div className="flex items-center">
           <input
             type="text"

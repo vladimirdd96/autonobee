@@ -60,6 +60,7 @@ export default function Home() {
                       className="object-contain hover:scale-105 transition-transform duration-300"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
                       quality={90}
+                      unoptimized
                     />
                   </div>
                   {/* Decorative elements */}
@@ -112,6 +113,7 @@ export default function Home() {
                         alt="AI Writing" 
                         fill
                         className="object-cover"
+                        unoptimized
                       />
                     </div>
                   </CardItem>
@@ -129,6 +131,7 @@ export default function Home() {
                         alt="Futuristic Technology" 
                         fill
                         className="object-cover"
+                        unoptimized
                       />
                     </div>
                   </CardItem>
@@ -154,6 +157,7 @@ export default function Home() {
                         width={800}
                         height={500}
                         className="w-full h-auto"
+                        unoptimized
                       />
                     </CardItem>
                   </CardBody>

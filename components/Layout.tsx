@@ -5,8 +5,8 @@ import Sidebar from './Sidebar';
 import { usePathname } from 'next/navigation';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(pathname === '/dashboard');
   const isLandingPage = pathname === '/';
 
   return (

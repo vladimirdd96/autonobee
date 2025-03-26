@@ -47,7 +47,7 @@ export default function Dashboard() {
         </div>
         <MeteorEffect count={15} color="#f9b72d" className="z-20 pointer-events-none" />
         <div className="p-4 pt-6 relative z-10">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-0 mb-4">
             <div className="relative">
               <h1 className="text-3xl font-bold">
                 <AnimatedGradientText text="Dashboard" />
@@ -55,12 +55,12 @@ export default function Dashboard() {
             </div>
             
             {/* Wallet Status */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="flex flex-wrap items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
                 <span className="text-sm text-accent">Connected</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-primary/10 border border-primary/20">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-sm text-accent">Pro Active</span>
               </div>

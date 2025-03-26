@@ -804,6 +804,7 @@ export default function ContentCreation() {
                               width={300}
                               height={200}
                               className="rounded-lg mb-4"
+                              unoptimized
                             />
                           </div>
                           <p className="text-accent/60 text-center mt-4">Your generated content will appear here</p>

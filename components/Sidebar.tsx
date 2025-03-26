@@ -25,12 +25,15 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
   const pathname = usePathname();
   
-  // Close sidebar when route changes
+  // Close sidebar when route changes, except when navigating to dashboard
   useEffect(() => {
-    onOpenChange(false);
+    if (pathname !== '/dashboard') {
+      onOpenChange(false);
+    }
   }, [pathname, onOpenChange]);
 
   const navItems = [
+    { name: 'Home', path: '/', icon: LayoutDashboard },
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Content Creation', path: '/content-creation', icon: FileEdit },
     { name: 'Chat', path: '/chat', icon: MessageSquare },
