@@ -1,6 +1,7 @@
 "use client";
 
 import GatedSection from "@/components/GatedSection";
+import Layout from "@/components/Layout";
 import Sidebar from "@/components/Sidebar";
 import TrendBox from "@/components/TrendBox";
 import { MeteorEffect } from "@/components/aceternity/meteor-effect";
@@ -21,14 +22,14 @@ export default function Trends() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   return (
-    <div className="min-h-screen bg-[#000000] pt-16 overflow-hidden">
-      <div className="fixed top-0 left-0 right-0">
-        <BackgroundBeams />
-      </div>
-      <MeteorEffect count={15} color="#f9b72d" className="z-0" />
-      <Sidebar isOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
-      <div className={`${isSidebarOpen ? 'ml-64' : 'ml-0'} px-6 pt-8 relative z-10 transition-all duration-300`}>
-        <div className="max-w-[90%] mx-auto">
+    <Layout>
+      <div className="min-h-screen bg-[#000000] overflow-hidden">
+        <div className="fixed top-0 left-0 right-0">
+          <BackgroundBeams />
+        </div>
+        <MeteorEffect count={15} color="#f9b72d" className="z-0" />
+        <Sidebar isOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
+        <div className={`${isSidebarOpen ? 'ml-64' : 'ml-0'} px-6 pt-8 relative z-10 transition-all duration-300`}>
           <div className="relative">
             <h1 className="text-4xl font-bold mb-2">
               <AnimatedGradientText text="Trends & Analytics" />
@@ -221,7 +222,7 @@ export default function Trends() {
           </GatedSection>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import Sidebar from "@/components/Sidebar";
+import Layout from "@/components/Layout";
 import { MeteorEffect } from "@/components/aceternity/meteor-effect";
 import { AnimatedGradientText } from "@/components/aceternity/animated-gradient-text";
 import { HoverGlowEffect } from "@/components/aceternity/hover-glow-effect";
@@ -108,17 +108,15 @@ const aiAgents = [
 
 export default function Team() {
   const [selectedAgent, setSelectedAgent] = React.useState<number | null>(null);
-  const [isOpen, setIsOpen] = React.useState(false);
   
   return (
-    <div className="min-h-screen bg-[#000000] pt-16 overflow-hidden">
-      <div className="fixed top-0 left-0 right-0">
-        <BackgroundBeams />
-      </div>
-      <MeteorEffect count={15} color="#f9b72d" className="z-0" />
-      <Sidebar isOpen={isOpen} onOpenChange={setIsOpen} />
-      <div className={`${isOpen ? 'ml-64' : 'ml-0'} px-4 pt-8 relative z-10 transition-all duration-300`}>
-        <div className="max-w-[90%] mx-auto">
+    <Layout>
+      <div className="min-h-screen bg-[#000000] overflow-hidden">
+        <div className="fixed top-0 left-0 right-0">
+          <BackgroundBeams />
+        </div>
+        <MeteorEffect count={15} color="#f9b72d" className="z-0" />
+        <div className="relative z-10 px-6 pt-8">
           <div className="relative">
             <h1 className="text-4xl font-bold mb-2">
               <AnimatedGradientText text="Our AI Agents" />
@@ -142,48 +140,46 @@ export default function Team() {
             Together, they form a powerful ecosystem that handles everything from content generation to performance analysis.
           </p>
 
-          <div className="px-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
-                {aiAgents.map((agent, index) => (
-                  <HoverGlowEffect key={index} containerClassName={selectedAgent === index ? "transform scale-105" : ""}>
-                    <div 
-                      className="cursor-pointer w-full h-[420px]" 
-                      onClick={() => setSelectedAgent(index === selectedAgent ? null : index)}
-                    >
-                      <div className="relative perspective-1000 h-full">
-                        <div className="bg-[#000000]/20 backdrop-blur-sm border border-[#f9b72d]/10 rounded-xl p-5 h-full flex flex-col">
-                          <div className="w-full flex flex-col items-center flex-1">
-                            <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${agent.iconBg} mb-3 relative flex items-center justify-center group transition-all duration-300`}>
-                              {React.createElement(agent.icon, {
-                                className: "w-10 h-10 text-[#ffffff] group-hover:scale-110 transition-transform duration-300",
-                                strokeWidth: 1.5
-                              })}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
+            {aiAgents.map((agent, index) => (
+              <HoverGlowEffect key={index} containerClassName={selectedAgent === index ? "transform scale-105" : ""}>
+                <div 
+                  className="cursor-pointer w-full h-[420px]" 
+                  onClick={() => setSelectedAgent(index === selectedAgent ? null : index)}
+                >
+                  <div className="relative perspective-1000 h-full">
+                    <div className="bg-[#000000]/20 backdrop-blur-sm border border-[#f9b72d]/10 rounded-xl p-5 h-full flex flex-col">
+                      <div className="w-full flex flex-col items-center flex-1">
+                        <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${agent.iconBg} mb-3 relative flex items-center justify-center group transition-all duration-300`}>
+                          {React.createElement(agent.icon, {
+                            className: "w-10 h-10 text-[#ffffff] group-hover:scale-110 transition-transform duration-300",
+                            strokeWidth: 1.5
+                          })}
+                        </div>
+                        <h3 className="font-semibold text-[#ffffff] text-lg mb-1 text-center">{agent.name}</h3>
+                        <p className="text-[#f9b72d] text-sm mb-2 text-center">{agent.role}</p>
+                        <p className="text-[#cccccc]/80 text-xs text-center mb-3 line-clamp-3 flex-none">{agent.bio}</p>
+                        <div className="flex flex-wrap gap-1 justify-center mb-3 flex-none">
+                          {agent.capabilities.map((capability, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-[#f9b72d]/10 text-[#f9b72d] rounded-full text-xs whitespace-nowrap">
+                              {capability}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 w-full text-center mt-auto">
+                          {Object.entries(agent.stats).map(([key, value]) => (
+                            <div key={key} className="bg-[#000000]/30 rounded-lg p-1.5">
+                              <div className="text-[10px] text-[#cccccc]/70 capitalize leading-tight">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
+                              <div className="text-xs font-medium text-[#ffffff]">{value}</div>
                             </div>
-                            <h3 className="font-semibold text-[#ffffff] text-lg mb-1 text-center">{agent.name}</h3>
-                            <p className="text-[#f9b72d] text-sm mb-2 text-center">{agent.role}</p>
-                            <p className="text-[#cccccc]/80 text-xs text-center mb-3 line-clamp-3 flex-none">{agent.bio}</p>
-                            <div className="flex flex-wrap gap-1 justify-center mb-3 flex-none">
-                              {agent.capabilities.map((capability, idx) => (
-                                <span key={idx} className="px-2 py-0.5 bg-[#f9b72d]/10 text-[#f9b72d] rounded-full text-xs whitespace-nowrap">
-                                  {capability}
-                                </span>
-                              ))}
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 w-full text-center mt-auto">
-                              {Object.entries(agent.stats).map(([key, value]) => (
-                                <div key={key} className="bg-[#000000]/30 rounded-lg p-1.5">
-                                  <div className="text-[10px] text-[#cccccc]/70 capitalize leading-tight">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
-                                  <div className="text-xs font-medium text-[#ffffff]">{value}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-                  </HoverGlowEffect>
-                ))}
-              </div>
+                  </div>
+                </div>
+              </HoverGlowEffect>
+            ))}
           </div>
           
           {selectedAgent !== null && (
@@ -286,6 +282,6 @@ export default function Team() {
           </AuroraBackground>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 } 

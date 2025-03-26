@@ -42,7 +42,7 @@ AutonoBee is a modern web application built with Next.js that provides a compreh
 1. Clone the repository:
 ```bash
 git clone [repository-url]
-cd autonobee-ui
+cd autonobee
 ```
 
 2. Install dependencies:
@@ -64,7 +64,7 @@ yarn dev
 ## 📁 Project Structure
 
 ```
-autonobee-ui/
+autonobee/
 ├── app/                    # Next.js app directory
 │   ├── analytics/         # Analytics page
 │   ├── chat/             # Chat interface
