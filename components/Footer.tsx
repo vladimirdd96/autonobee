@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Logo from './Logo';
-import { Twitter, Github } from 'lucide-react';
+import { X, Github } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -48,9 +48,9 @@ export default function Footer() {
           <p className="text-accent/50 text-sm">© 2024 AutonoBee. All rights reserved.</p>
           
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="#" className="text-accent/70 hover:text-primary transition-colors">
-              <span className="sr-only">Twitter</span>
-              <Twitter className="h-6 w-6" />
+            <a href="https://x.com/autonobee" target="_blank" rel="noopener noreferrer" className="text-accent/70 hover:text-primary transition-colors">
+              <span className="sr-only">X (formerly Twitter)</span>
+              <X className="h-6 w-6" />
             </a>
             
             <a href="#" className="text-accent/70 hover:text-primary transition-colors">
