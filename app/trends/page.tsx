@@ -2,7 +2,6 @@
 
 import GatedSection from "@/components/GatedSection";
 import Layout from "@/components/Layout";
-import Sidebar from "@/components/Sidebar";
 import TrendBox from "@/components/TrendBox";
 import { MeteorEffect } from "@/components/aceternity/meteor-effect";
 import { AnimatedGradientText } from "@/components/aceternity/animated-gradient-text";
@@ -12,14 +11,11 @@ import { AuroraBackground } from "@/components/aceternity/aurora-background";
 import { BackgroundBeams } from "@/components/aceternity/background-beams";
 import { SparklesCore } from "@/components/aceternity/sparkles";
 import { CardContainer, CardBody } from "@/components/aceternity/3d-card";
-import React, { useState } from "react";
+import React from "react";
 
 export default function Trends() {
   // Simulate wallet connection and token presence
   const hasToken = true; // Set to false to simulate restriction
-  
-  // Add state for sidebar
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   return (
     <Layout>
@@ -28,8 +24,7 @@ export default function Trends() {
           <BackgroundBeams />
         </div>
         <MeteorEffect count={15} color="#f9b72d" className="z-0" />
-        <Sidebar isOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
-        <div className={`${isSidebarOpen ? 'ml-64' : 'ml-0'} px-6 pt-8 relative z-10 transition-all duration-300`}>
+        <div className="relative z-10">
           <div className="relative">
             <h1 className="text-4xl font-bold mb-2">
               <AnimatedGradientText text="Trends & Analytics" />
