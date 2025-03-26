@@ -3,6 +3,7 @@ import { Open_Sans, Koulen } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const openSans = Open_Sans({
   weight: ['300', '400', '500', '600', '700'],
@@ -34,11 +35,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`${openSans.variable} ${koulen.variable} font-sans bg-background text-accent`}>
-        <div className="relative z-10">
-          <Navbar />
-          {children}
-          <Footer />
-        </div>
+        <AuthProvider>
+          <div className="relative z-10">
+            <Navbar />
+            {children}
+            <Footer />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

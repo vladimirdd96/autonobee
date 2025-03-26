@@ -6,6 +6,7 @@ import Logo from './Logo';
 import { MovingBorder } from './aceternity/moving-border';
 import { Menu, X, ChevronDown, ChevronUp, LayoutDashboard, FileEdit, MessageSquare, BarChart2, TrendingUp, Users, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
@@ -38,6 +39,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isLandingPage = pathname === '/';
+  const { isXAuthorized, authorizeX } = useAuth();
 
   return (
     <header className="w-full py-4 fixed top-0 left-0 z-30">
@@ -82,28 +84,34 @@ export default function Navbar() {
             </Link>
           </div>
           
-          {/* Desktop Sign Up Button */}
+          {/* Desktop Authorize X Button */}
           <div className="hidden md:flex gap-4 relative z-40 shrink-0">
             {isDesktop && (
               <MovingBorder borderRadius="0.5rem" containerClassName="p-1.5">
-                <Link 
-                  href="/sign-up" 
-                  className="px-4 py-2 bg-background text-primary rounded-md hover:bg-background/90 transition-colors font-medium"
+                <button 
+                  onClick={authorizeX}
+                  className="px-4 py-2 bg-background text-primary rounded-md hover:bg-background/90 transition-colors font-medium flex items-center gap-2"
                 >
-                  Sign Up
-                </Link>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                  {isXAuthorized ? 'Connected' : 'Authorize X'}
+                </button>
               </MovingBorder>
             )}
           </div>
 
-          {/* Mobile Sign Up Button */}
+          {/* Mobile Authorize X Button */}
           <div className="md:hidden relative z-50 shrink-0">
-            <Link 
-              href="/sign-up"
-              className="px-3 py-1.5 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap"
+            <button 
+              onClick={authorizeX}
+              className="px-3 py-1.5 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex items-center gap-2"
             >
-              Sign Up
-            </Link>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              {isXAuthorized ? 'Connected' : 'Authorize X'}
+            </button>
           </div>
 
           {/* Mobile Menu Overlay */}
