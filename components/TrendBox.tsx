@@ -2,14 +2,38 @@
 
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-interface TrendBoxProps {
+export interface TrendBoxProps {
   title: string;
   percentage: number;
   category: string;
   isIncreasing: boolean;
+  isPostCount?: boolean | string;
 }
 
-export default function TrendBox({ title, percentage, category, isIncreasing }: TrendBoxProps) {
+export default function TrendBox({ 
+  title, 
+  percentage, 
+  category, 
+  isIncreasing,
+  isPostCount = false
+}: TrendBoxProps) {
+  // Determine the unit to display
+  let unit = '%';
+  if (isPostCount) {
+    unit = typeof isPostCount === 'string' ? isPostCount : 'K';
+  }
+  
+  // Determine the description
+  const description = isPostCount ? 'posts' : 'vs last week';
+  
+  // Calculate width for the progress bar
+  const calculateWidth = () => {
+    if (!isPostCount) return Math.min(percentage * 3, 100);
+    
+    // For post counts, scale differently
+    return Math.min(percentage * 5, 100);
+  };
+  
   return (
     <div className="bg-[#000000]/20 backdrop-blur-sm border border-[#f9b72d]/10 rounded-lg p-4 hover:shadow-lg transition-shadow">
       <span className="text-xs font-medium text-[#f9b72d] px-2 py-1 rounded bg-[#f9b72d]/10 mb-2 inline-block">
@@ -26,16 +50,16 @@ export default function TrendBox({ title, percentage, category, isIncreasing }: 
             <TrendingUp className="w-4 h-4 mr-1" /> : 
             <TrendingDown className="w-4 h-4 mr-1" />
           } 
-          {percentage}%
+          {percentage}{unit}
         </div>
         <div className="ml-2 text-xs text-[#cccccc]/70">
-          vs last week
+          {description}
         </div>
       </div>
       <div className="mt-4 h-2 w-full bg-[#000000]/40 rounded-full overflow-hidden">
         <div 
           className="h-full bg-[#f9b72d]" 
-          style={{ width: `${Math.min(percentage * 3, 100)}%` }}
+          style={{ width: `${calculateWidth()}%` }}
         />
       </div>
     </div>

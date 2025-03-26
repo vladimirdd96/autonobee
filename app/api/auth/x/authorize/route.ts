@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import xApiAuth from '../utils/XApiAuth';
 
 // Generate a random state and code verifier for PKCE
 function generateCodeVerifier() {
@@ -19,31 +20,31 @@ function generateCodeChallenge(verifier: string) {
 }
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/x/callback`;
+
+// Use ngrok URL if available, otherwise use the app URL
+const baseUrl = process.env.NGROK_STATIC_DOMAIN 
+  ? `https://${process.env.NGROK_STATIC_DOMAIN}` 
+  : process.env.NEXT_PUBLIC_APP_URL;
+
+const REDIRECT_URI = `${baseUrl}/api/auth/x/callback`;
 
 export async function GET() {
-  if (!X_CLIENT_ID) {
+  if (!process.env.NEXT_PUBLIC_X_CLIENT_ID) {
     return NextResponse.json({ error: 'X Client ID not configured' }, { status: 500 });
   }
 
+  // Generate a random state for security
   const state = crypto.randomBytes(16).toString('hex');
-  const codeVerifier = generateCodeVerifier();
-  const codeChallenge = generateCodeChallenge(codeVerifier);
 
-  // Store the state and code verifier in a secure session/cookie
-  // This will be used to verify the callback
-  const response = NextResponse.redirect(
-    `https://twitter.com/i/oauth2/authorize?` +
-    `response_type=code` +
-    `&client_id=${process.env.X_CLIENT_ID}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&scope=tweet.read%20tweet.write%20users.read%20offline.access` +
-    `&state=${state}` +
-    `&code_challenge=${codeChallenge}` +
-    `&code_challenge_method=S256`
-  );
+  // Get authorization URL and code verifier using our auth manager
+  const { url, codeVerifier } = xApiAuth.generateAuthUrl(state);
 
-  // Store the state and code verifier in cookies
+  console.log('Using callback URL:', xApiAuth.callbackUrl);
+
+  // Create response that redirects to X's authorization page
+  const response = NextResponse.redirect(url);
+
+  // Store the state and code verifier in cookies for later verification
   response.cookies.set('x_auth_state', state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

@@ -3,31 +3,27 @@ import { cookies } from 'next/headers';
 
 export async function GET() {
   const cookieStore = cookies();
-  const accessToken = cookieStore.get('x_access_token');
-  const userData = cookieStore.get('x_user');
-
+  const accessToken = cookieStore.get('x_access_token')?.value;
+  const userData = cookieStore.get('x_user')?.value;
+  
   if (!accessToken || !userData) {
     return NextResponse.json({ authorized: false });
   }
-
+  
   try {
-    // Verify token is still valid
-    const response = await fetch('https://api.twitter.com/2/users/me', {
-      headers: {
-        Authorization: `Bearer ${accessToken.value}`,
-      },
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ authorized: false });
-    }
-
+    // Parse user data from cookie
+    const user = JSON.parse(userData);
+    
     return NextResponse.json({
       authorized: true,
-      user: JSON.parse(userData.value),
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username
+      }
     });
   } catch (error) {
-    console.error('Error checking X auth:', error);
+    console.error('Error parsing user data:', error);
     return NextResponse.json({ authorized: false });
   }
 } 

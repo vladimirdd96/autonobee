@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "ngrok": "node ngrok-started-app.js",
+    "ngrok:debug": "node ngrok-debug.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",
@@ -18,13 +20,16 @@
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-toast": "^1.1.5",
     "@radix-ui/react-tooltip": "^1.0.7",
+    "axios": "^1.8.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "critters": "^0.0.23",
+    "dotenv": "^16.4.7",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.344.0",
     "next": "14.1.0",
     "next-themes": "^0.2.1",
+    "ngrok": "^5.0.0-beta.2",
     "openai": "^4.89.1",
     "react": "^18",
     "react-dom": "^18",
