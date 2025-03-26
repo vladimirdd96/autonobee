@@ -9,9 +9,11 @@ import { ParallaxScroll } from "@/components/aceternity/parallax-scroll";
 import { HoverGlowEffect } from "@/components/aceternity/hover-glow-effect";
 import { TextRevealCard } from "@/components/aceternity/text-reveal-card";
 import { CardContainer, CardBody, CardItem } from "@/components/aceternity/3d-card";
+import Layout from "@/components/Layout";
 
 export default function Home() {
   return (
+    <Layout>
     <div className="bg-background text-accent">
       {/* Hero Section with Aurora Background and Meteor Effect - Extended by 30% height */}
       <AuroraBackground 
@@ -425,6 +427,7 @@ export default function Home() {
         </div>
       </section>
     </div>
+    </Layout>
   );
 }
 

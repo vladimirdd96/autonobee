@@ -1,13 +1,23 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Sidebar from './Sidebar';
 import { usePathname } from 'next/navigation';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(pathname === '/dashboard');
+  // const previousPathRef = useRef<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isLandingPage = pathname === '/';
+
+  // useEffect(() => {
+  //   // Only open sidebar when navigating from home to dashboard
+  //   if (previousPathRef.current === '/' && pathname === '/dashboard') {
+  //     setIsSidebarOpen(true);
+  //   }
+  //   // Update the previous path
+  //   previousPathRef.current = pathname;
+  // }, [pathname]);
 
   return (
     <div className="min-h-screen bg-background pt-16">

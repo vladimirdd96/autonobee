@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
 import {
   LayoutDashboard,
   MessageSquare,
@@ -24,13 +23,6 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
   const pathname = usePathname();
-  
-  // Close sidebar when route changes, except when navigating to dashboard
-  useEffect(() => {
-    if (pathname !== '/dashboard') {
-      onOpenChange(false);
-    }
-  }, [pathname, onOpenChange]);
 
   const navItems = [
     { name: 'Home', path: '/', icon: LayoutDashboard },
