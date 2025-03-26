@@ -36,6 +36,12 @@ export default function Home() {
                     Craft Content with <AnimatedGradientText text="AI Precision" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display" />
                   </h1>
                 </div>
+                <div className="mb-4 md:mb-6">
+                  <AnimatedGradientText 
+                    text="Let the bees build your buzz" 
+                    className="text-xl sm:text-2xl md:text-3xl font-display italic"
+                  />
+                </div>
                 <h2 className="text-xl sm:text-2xl md:text-2xl font-display mb-4 md:mb-6 text-accent animate-fade-in">
                   Elevate Every Word, Every Message
                 </h2>
