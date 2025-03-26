@@ -1,6 +1,8 @@
+'use client';
+
 import ContentCard from "@/components/ContentCard";
 import GatedSection from "@/components/GatedSection";
-import Sidebar from "@/components/Sidebar";
+import Layout from "@/components/Layout";
 import TrendBox from "@/components/TrendBox";
 import { MeteorEffect } from "@/components/aceternity/meteor-effect";
 import { AnimatedGradientText } from "@/components/aceternity/animated-gradient-text";
@@ -38,106 +40,46 @@ export default function Dashboard() {
   const hasToken = true; // Set to false to simulate restriction
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background/95 to-background/90 pt-16">
-      <div className="fixed top-0 left-0 right-0">
-        <BackgroundBeams />
-      </div>
-      <MeteorEffect count={35} color="#f9b72d" className="z-20" />
-      <Sidebar />
-      <div className="ml-64 p-4 pt-6 relative z-10">
-        <div className="flex justify-between items-center mb-4">
-          <div className="relative">
-            <h1 className="text-3xl font-bold">
-              <AnimatedGradientText text="Dashboard" />
-            </h1>
-            <div className="absolute -top-8 left-0 w-screen h-[100vh] pointer-events-none z-0">
-              {/* Single layer of sparkles with reduced density */}
-              <div className="absolute top-0 left-0 w-full h-full">
-                <SparklesCore
-                  background="transparent"
-                  minSize={0.4}
-                  maxSize={1}
-                  particleDensity={300}
-                  className="w-full h-full"
-                  particleColor="#f9b72d"
-                />
+    <Layout>
+      <div className="min-h-screen bg-gradient-to-b from-background via-background/95 to-background/90">
+        <div className="fixed top-0 left-0 right-0 pointer-events-none opacity-50">
+          <BackgroundBeams />
+        </div>
+        <MeteorEffect count={15} color="#f9b72d" className="z-20 pointer-events-none" />
+        <div className="p-4 pt-6 relative z-10">
+          <div className="flex justify-between items-center mb-4">
+            <div className="relative">
+              <h1 className="text-3xl font-bold">
+                <AnimatedGradientText text="Dashboard" />
+              </h1>
+            </div>
+            
+            {/* Wallet Status */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <span className="text-sm text-accent">Connected</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm text-accent">Pro Active</span>
               </div>
             </div>
           </div>
-          
-          {/* Wallet Status */}
-          <div className="flex gap-4 items-center">
-            <div className="text-accent px-3 py-1.5 bg-gradient-to-r from-background/50 to-grayDark/50 backdrop-blur-sm rounded-lg border border-primary/10">
-              {hasToken ? (
-                <div className="flex items-center">
-                  <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                  <span>Connected with $FORGE token</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-                  <span>Wallet not connected</span>
-                </div>
-              )}
-            </div>
-            
-            {!hasToken && (
-              <MovingBorder borderRadius="0.5rem" containerClassName="p-0.5">
-                <button className="px-4 py-2 bg-gradient-to-r from-background to-background/80 text-primary rounded-md hover:bg-primary/10 transition-colors">
-                  Connect Wallet
-                </button>
-              </MovingBorder>
-            )}
-            
-            <div className="bg-gradient-to-r from-background/50 to-grayDark/50 backdrop-blur-sm text-accent px-3 py-1.5 rounded-lg border border-primary/10 flex items-center">
-              <Clock className="w-4 h-4 mr-1.5 text-accent/70" />
-              <span className="text-sm">Last updated: Just now</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Stats Overview - Simplified animation */}
-        <div className="rounded-xl mb-6 py-4 px-3 bg-gradient-to-br from-background/50 to-grayDark/50 backdrop-blur-sm">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {stats.map((stat, index) => (
-              <div key={index}>
-                <div className="relative perspective-1000">
-                  <div className="bg-gradient-to-br from-background/40 to-grayDark/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10">
-                    <div>
-                      <div className="flex items-center mb-2">
-                        {getStatIcon(stat.title)}
-                        <h3 className="text-accent/70 text-xs font-medium ml-2">{stat.title}</h3>
-                      </div>
-                      <p className="text-2xl font-bold text-accent mb-1">{stat.value}</p>
-                      <div className="flex items-center">
-                        <span className={`text-xs flex items-center ${stat.isIncreasing ? 'text-green-500' : 'text-red-500'}`}>
-                          {stat.isIncreasing ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingUp className="w-3 h-3 mr-1 transform rotate-180" />} 
-                          {stat.changePercent}%
-                        </span>
-                        <span className="text-xs text-accent/50 ml-2">vs last week</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
           <div className="grid grid-cols-1 gap-4 mb-6">
-            {/* Recent Content - Full width */}
             <div className="w-full">
               <div className="bg-gradient-to-br from-grayDark/30 via-background/30 to-background/40 backdrop-blur-sm rounded-xl border border-primary/10 p-4">
                 <h2 className="text-lg font-bold text-accent mb-3 flex justify-between items-center">
-                  <AnimatedGradientText text="Recent Content" />
+                  <span className="text-accent">Recent Content</span>
                   <Link href="/content-creation" className="text-xs px-3 py-1 bg-gradient-to-r from-primary/20 to-primary/10 text-primary rounded-md hover:from-primary/30 hover:to-primary/20 transition-all font-normal">
                     View All Content
                   </Link>
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                  {recentContent.map((content, index) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {recentContent.slice(0, 4).map((content, index) => (
                     <div key={index} className="group">
-                      <div className="relative perspective-1000">
+                      <div className="relative">
                         <div className="bg-gradient-to-br from-background/30 to-grayDark/30 border border-primary/10 rounded-xl overflow-hidden p-0 transition-transform duration-200 group-hover:scale-[1.02]">
                           <div className="w-full">
                             <ContentCard 
@@ -157,19 +99,18 @@ export default function Dashboard() {
             </div>
           </div>
         
-        {/* Trends - Gated Section */}
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-accent flex justify-between items-center mb-4">
-            <AnimatedGradientText text="Content Trends" />
-            <Link href="/analytics" className="text-xs px-3 py-1 bg-gradient-to-r from-primary/20 to-primary/10 text-primary rounded-md hover:from-primary/30 hover:to-primary/20 transition-all font-normal">
-              Full Analytics
-            </Link>
-          </h2>
-          <GatedSection hasAccess={hasToken}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {trends.map((trend, index) => (
-                <HoverGlowEffect key={index}>
-                  <div className="relative perspective-1000">
+          {/* Trends - Simplified version */}
+          <div className="mb-8">
+            <h2 className="text-lg font-bold text-accent flex justify-between items-center mb-4">
+              <span className="text-accent">Content Trends</span>
+              <Link href="/analytics" className="text-xs px-3 py-1 bg-gradient-to-r from-primary/20 to-primary/10 text-primary rounded-md hover:from-primary/30 hover:to-primary/20 transition-all font-normal">
+                Full Analytics
+              </Link>
+            </h2>
+            <GatedSection hasAccess={hasToken}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {trends.map((trend, index) => (
+                  <div key={index} className="relative">
                     <div className="bg-gradient-to-br from-background/30 to-grayDark/30">
                       <div>
                         <TrendBox 
@@ -181,71 +122,52 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                </HoverGlowEffect>
-              ))}
-            </div>
-          </GatedSection>
-        </div>
-
-        {/* Top Performing Section - Enhanced */}
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-accent mb-4 flex items-center">
-            <AnimatedGradientText text="🔥 Top Performing Content" />
-            <span className="ml-2 px-2 py-0.5 bg-[#f9b72d] text-black text-xs rounded-full font-normal">Outperforming competitors</span>
-          </h2>
-          <div className="bg-gradient-to-br from-[#000000]/60 to-[#0a0a0a]/60 backdrop-blur-md p-6 rounded-xl border border-[#f9b72d]/30 shadow-lg shadow-[#f9b72d]/5">
-            <p className="text-sm text-accent/80 mb-4">Posts created with AutonoBee consistently outperform industry averages</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {topPerforming.map((item, idx) => (
-                <div key={idx} className="group relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#f9b72d]/30 to-[#f9b72d]/10 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-300"></div>
-                  <div className="relative bg-gradient-to-br from-background/80 to-grayDark/80 p-4 rounded-lg border border-[#f9b72d]/20 overflow-hidden">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#f9b72d] to-[#f9b72d]/70 flex items-center justify-center text-black font-bold text-lg">
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm text-accent font-medium mb-2">{item.title}</div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1">
-                          <div className="flex items-center text-green-400 text-xs">
-                            <TrendingUp className="w-3 h-3 mr-1" /> 
-                            <span>{item.engagement}% Engagement</span>
-                          </div>
-                          <div className="flex items-center text-accent/80 text-xs">
-                            <Eye className="w-3 h-3 mr-1" /> 
-                            <span>{item.views.toLocaleString()} Views</span>
-                          </div>
-                          <div className="flex items-center text-blue-400 text-xs">
-                            <Share className="w-3 h-3 mr-1" /> 
-                            <span>{item.shares} Shares</span>
-                          </div>
+                ))}
+              </div>
+            </GatedSection>
+          </div>
+          
+          {/* Top Performing Section - Simplified */}
+          <div className="mb-16">
+            <h2 className="text-lg font-bold text-accent mb-4 flex items-center">
+              <span className="text-accent">🔥 Top Performing Content</span>
+              <span className="ml-2 px-2 py-0.5 bg-[#f9b72d] text-black text-xs rounded-full font-normal">Outperforming competitors</span>
+            </h2>
+            <div className="bg-gradient-to-br from-[#000000]/60 to-[#0a0a0a]/60 backdrop-blur-md p-6 rounded-xl border border-[#f9b72d]/30">
+              <p className="text-sm text-accent/80 mb-4">Posts created with AutonoBee consistently outperform industry averages</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {topPerforming.map((item, idx) => (
+                  <div key={idx} className="group relative">
+                    <div className="bg-background/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10">
+                      <h3 className="font-semibold text-accent mb-2">{item.title}</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-sm text-accent/60">Views</div>
+                          <div className="text-lg font-semibold text-primary">{item.views.toLocaleString()}</div>
                         </div>
-                        <div className="mt-2 text-xs text-[#f9b72d]">
-                          <span className="font-semibold">{item.improvement}%</span> better than industry average
+                        <div>
+                          <div className="text-sm text-accent/60">Engagement</div>
+                          <div className="text-lg font-semibold text-primary">{item.engagement}%</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-accent/60">Shares</div>
+                          <div className="text-lg font-semibold text-primary">{item.shares}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-accent/60">Improvement</div>
+                          <div className="text-lg font-semibold text-green-500">+{item.improvement}%</div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 bg-gradient-to-r from-[#f9b72d]/20 to-transparent p-3 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-accent font-medium flex items-center">
-                  <Sparkles className="w-4 h-4 mr-2 text-[#f9b72d]" />
-                  Average performance increase with AutonoBee
-                </div>
-                <div className="text-xl font-bold text-[#f9b72d]">+187%</div>
+                ))}
               </div>
             </div>
           </div>
         </div>
-
-        
       </div>
-    </div>
+    </Layout>
   );
 }
 

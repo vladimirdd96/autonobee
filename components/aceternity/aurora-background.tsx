@@ -31,7 +31,7 @@ export function AuroraBackground({
       <div
         className="absolute inset-0 overflow-visible opacity-50"
         style={{
-          zIndex: 1
+          zIndex: -1
         }}
       >
         <div

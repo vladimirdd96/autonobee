@@ -20,67 +20,53 @@ export default function Home() {
         secondaryColor="hsl(0, 0%, 80%)"
         className="relative z-0"
       >
-        <section className="pt-40 pb-32 md:pt-52 md:pb-40 relative">
+        <section className="pt-20 pb-16 md:pt-40 md:pb-32 relative">
           <MeteorEffect count={25} color="#f9b72d" className="z-0" />
           <div className="container mx-auto px-4 relative">
             <div className="flex flex-col md:flex-row items-center justify-between">
-              <div className="md:w-1/2 mb-10 md:mb-0 relative">
+              <div className="w-full md:w-1/2 mb-8 md:mb-0 relative text-center md:text-left">
                 <div className="relative">
                   <Spotlight
-                    className="-top-40 left-0 md:left-96 md:-top-50 h-[1000%] w-[700%] lg:w-[100%]"
+                    className="-top-40 left-0 md:left-96 md:-top-50 h-[1000%] w-[100%] md:w-[700%] lg:w-[100%]"
                     fill="#ffffff"
                   />
-                  <h1 className="text-4xl md:text-5xl lg:text-5xl font-display mb-6 leading-tight">
-                    Craft Content with <AnimatedGradientText text="AI Precision" className="text-4xl md:text-5xl lg:text-6xl font-display" />
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-display mb-4 md:mb-6 leading-tight">
+                    Craft Content with <AnimatedGradientText text="AI Precision" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display" />
                   </h1>
                 </div>
-                <h2 className="text-2xl md:text-2xl font-display mb-6 text-accent animate-fade-in">
+                <h2 className="text-xl sm:text-2xl md:text-2xl font-display mb-4 md:mb-6 text-accent animate-fade-in">
                   Elevate Every Word, Every Message
                 </h2>
-                <p className="text-lg mb-8 text-accent/80 max-w-lg animate-reveal">
+                <p className="text-base sm:text-lg mb-6 md:mb-8 text-accent/80 max-w-lg mx-auto md:mx-0 animate-reveal">
                   Dive into the future of content creation. Harness the power of artificial intelligence to craft messages that resonate, engage, and convert.
                 </p>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                   <Link 
                     href="/dashboard" 
-                    className="bg-[#f9b72d] text-[#000000] font-medium px-6 py-3 rounded-md transition-transform hover:scale-105 active:scale-95 whitespace-nowrap"
+                    className="w-full sm:w-auto bg-[#f9b72d] text-[#000000] font-medium px-6 py-3 rounded-md transition-transform hover:scale-105 active:scale-95 whitespace-nowrap"
                   >
                     Take Your Journey Today
                   </Link>
                 </div>
               </div>
-              <div className="md:w-1/2 relative">
-                <div className="w-full h-[390px] md:h-[520px] relative">
-                  <CardContainer className="inter-var">
-                    <CardBody className="bg-transparent border-0 relative group/card transition-transform duration-300 ease-out">
-                      <CardItem 
-                        translateZ={100}
-                        className="w-full h-full bg-gradient-to-br from-primary/40 to-transparent rounded-3xl overflow-hidden flex items-center justify-center border border-primary/20 backdrop-blur-sm"
-                      >
-                        <div className="relative w-4/5 h-4/5">
-                          <div className="absolute w-40 h-40 bg-primary/40 rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-float"></div>
-                          <div className="absolute w-32 h-32 bg-accent/50 rounded-full top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2 animate-float"></div>
-                          <div className="absolute w-24 h-24 bg-primary/30 rounded-full bottom-1/4 right-1/4 transform translate-x-1/2 translate-y-1/2 animate-bounce-slow"></div>
-                          <div className="absolute w-16 h-16 bg-accent/60 rounded-full top-1/3 right-1/3 animate-spin-slow"></div>
-                          <div className="absolute w-20 h-20 bg-primary/20 rounded-full bottom-1/3 left-1/3 animate-bounce-slow"></div>
-                          <div className="absolute w-10 h-36 bg-accent/30 rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 animate-float"></div>
-                          <div className="absolute w-36 h-10 bg-primary/40 rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 animate-float"></div>
-                        </div>
-                      </CardItem>
-                      <CardItem
-                        translateZ={120}
-                        className="absolute bottom-12 right-12 w-24 h-24 bg-primary rounded-full"
-                      >
-                        <div></div>
-                      </CardItem>
-                      <CardItem
-                        translateZ={80}
-                        className="absolute top-12 left-12 w-16 h-16 bg-accent/60 rounded-full"
-                      >
-                        <div></div>
-                      </CardItem>
-                    </CardBody>
-                  </CardContainer>
+              <div className="w-full md:w-1/2 relative">
+                <div className="w-full relative px-4 md:px-0">
+                  <div className="relative aspect-square md:aspect-[4/3] lg:aspect-[3/2] max-w-[600px] mx-auto">
+                    <Image
+                      src="/images/hero-banner.png"
+                      alt="Friendly cartoon bees illustration"
+                      fill
+                      priority
+                      className="object-contain hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
+                      quality={90}
+                    />
+                  </div>
+                  {/* Decorative elements */}
+                  <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full">
+                    <div className="absolute w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+                    <div className="absolute right-0 bottom-0 w-40 h-40 bg-accent/10 rounded-full blur-3xl animate-pulse delay-300"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -102,16 +88,18 @@ export default function Home() {
       <section className="py-16 bg-primary/5 relative">
         <MeteorEffect count={10} color="#f9b72d" className="z-0" />
         <div className="container mx-auto px-4 text-center relative z-10">
-          <TextRevealCard
-            text="Discover AI-Powered Content Brilliance"
-            revealText="The Future of Content Creation Is Here"
-            className="mx-auto max-w-4xl text-3xl md:text-4xl font-display"
-            revealClassName="text-primary"
-          >
-            <p className="text-lg text-accent/80 max-w-2xl mx-auto mt-8">
-              Transform the future of your writing. Tap into the unparalleled precision of AI to create content that resonates with your audience, connects with readers, inspires your journey towards remarkable content.
-            </p>
-          </TextRevealCard>
+          <Link href="/dashboard">
+            <TextRevealCard
+              text="Discover AI-Powered Content Brilliance"
+              revealText="The Future of Content Creation Is Here"
+              className="mx-auto max-w-4xl text-3xl md:text-4xl font-display"
+              revealClassName="text-primary"
+            >
+              <p className="text-lg text-accent/80 max-w-2xl mx-auto mt-8">
+                Transform the future of your writing. Tap into the unparalleled precision of AI to create content that resonates with your audience, connects with readers, inspires your journey towards remarkable content.
+              </p>
+            </TextRevealCard>
+          </Link>
           
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
             <HoverGlowEffect>
@@ -442,18 +430,6 @@ const testimonials = [
     name: "Sarah Johnson",
     title: "Marketing Director",
     quote: "AutonoBee has completely transformed how our team creates content. I'm genuinely amazed at how it's cut our production time in half while improving quality. The AI understands our brand voice perfectly - I couldn't imagine going back to our old process!"
-  },
-  {
-    avatar: "👨‍💻",
-    name: "David Chen",
-    title: "Content Creator",
-    quote: "Words cannot express how grateful I am for discovering AutonoBee. As someone who writes daily, it's not just a tool but a true creative partner. The quality of content it helps me produce has literally doubled my client base in three months."
-  },
-  {
-    avatar: "👩‍🎓",
-    name: "Emma Rodriguez",
-    title: "Freelance Writer",
-    quote: "I've tried every AI writing tool on the market, and AutonoBee is truly in a league of its own. It's like they read my mind! The thoughtfulness behind every feature shows they truly understand what writers need. Absolutely life-changing for my business."
   },
   {
     avatar: "👨‍🚀",

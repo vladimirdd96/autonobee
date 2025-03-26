@@ -108,6 +108,7 @@ const aiAgents = [
 
 export default function Team() {
   const [selectedAgent, setSelectedAgent] = React.useState<number | null>(null);
+  const [isOpen, setIsOpen] = React.useState(false);
   
   return (
     <div className="min-h-screen bg-[#000000] pt-16 overflow-hidden">
@@ -115,8 +116,8 @@ export default function Team() {
         <BackgroundBeams />
       </div>
       <MeteorEffect count={15} color="#f9b72d" className="z-0" />
-      <Sidebar />
-      <div className="ml-64 px-4 pt-8 relative z-10 w-[calc(100%-16rem)]">
+      <Sidebar isOpen={isOpen} onOpenChange={setIsOpen} />
+      <div className={`${isOpen ? 'ml-64' : 'ml-0'} px-4 pt-8 relative z-10 transition-all duration-300`}>
         <div className="max-w-[90%] mx-auto">
           <div className="relative">
             <h1 className="text-4xl font-bold mb-2">

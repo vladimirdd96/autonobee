@@ -42,7 +42,7 @@ export function FloatingNavbar({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className={cn(
-          "fixed top-6 inset-x-0 max-w-2xl mx-auto z-50",
+          "relative z-50",
           className
         )}
       >
@@ -59,7 +59,18 @@ export function FloatingNavbar({
               <motion.div
                 className={cn(
                   "absolute inset-0 rounded-full",
-                  pathname === item.link ? "bg-primary/20 text-white" : "text-accent hover:text-white"
+                  (pathname === item.link || 
+                   (item.link === '/dashboard' && (
+                     pathname.startsWith('/dashboard') || 
+                     pathname.startsWith('/content-creation') || 
+                     pathname.startsWith('/chat') || 
+                     pathname.startsWith('/analytics') || 
+                     pathname.startsWith('/trends') || 
+                     pathname.startsWith('/team') || 
+                     pathname.startsWith('/settings')
+                   ))) 
+                    ? "bg-primary/20 text-white" 
+                    : "text-accent hover:text-white"
                 )}
                 layoutId="navbar-indicator"
                 transition={{
@@ -67,7 +78,16 @@ export function FloatingNavbar({
                   duration: 0.6,
                   bounce: 0.2,
                 }}
-                style={{ opacity: pathname === item.link ? 1 : 0 }}
+                style={{ opacity: (pathname === item.link || 
+                  (item.link === '/dashboard' && (
+                    pathname.startsWith('/dashboard') || 
+                    pathname.startsWith('/content-creation') || 
+                    pathname.startsWith('/chat') || 
+                    pathname.startsWith('/analytics') || 
+                    pathname.startsWith('/trends') || 
+                    pathname.startsWith('/team') || 
+                    pathname.startsWith('/settings')
+                  ))) ? 1 : 0 }}
               />
               <span className="relative z-10 text-sm font-medium">{item.name}</span>
             </Link>
