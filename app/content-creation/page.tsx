@@ -126,6 +126,8 @@ export default function ContentCreation() {
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isXAuthorized, authorizeX } = useAuth();
+  const [isPosting, setIsPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -379,6 +381,69 @@ export default function ContentCreation() {
   const handleDismissError = useCallback(() => {
     setError(null);
   }, []);
+
+  const handlePostToX = useCallback(async () => {
+    if (!generatedContent) return;
+    
+    setIsPosting(true);
+    setPostError(null);
+    
+    try {
+      // First, upload media if any
+      const mediaIds = [];
+      if (mediaAttachments.length > 0) {
+        for (const attachment of mediaAttachments) {
+          // Convert base64 to blob
+          const base64Data = attachment.split(',')[1];
+          const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(res => res.blob());
+          
+          // Create form data
+          const formData = new FormData();
+          formData.append('media', blob, 'image.jpg');
+          
+          // Upload media using app-level OAuth 1.0a
+          const uploadResponse = await fetch('/api/x/upload-media', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to upload media');
+          }
+          
+          const { media_id } = await uploadResponse.json();
+          mediaIds.push(media_id);
+        }
+      }
+      
+      // Post the tweet using user's OAuth 2.0 authorization
+      const response = await fetch('/api/x/post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: generatedContent,
+          mediaIds
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to post tweet');
+      }
+      
+      // Clear the form and show success message
+      setGeneratedContent('');
+      setMediaAttachments([]);
+      alert('Tweet posted successfully!');
+    } catch (error: any) {
+      console.error('Error posting tweet:', error);
+      setPostError(error.message || 'Failed to post tweet');
+    } finally {
+      setIsPosting(false);
+    }
+  }, [generatedContent, mediaAttachments]);
 
   return (
     <>
@@ -922,18 +987,30 @@ export default function ContentCreation() {
                       <div className="mt-6 grid grid-cols-4 gap-2">
                         {/* X (Twitter) Button */}
                         <button
-                          onClick={() => alert('Posting to X...')}
-                          disabled={!generatedContent}
+                          onClick={handlePostToX}
+                          disabled={!generatedContent || isPosting}
                           className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                            generatedContent 
+                            generatedContent && !isPosting
                               ? 'bg-primary text-background hover:bg-primary/90' 
                               : 'bg-accent/30 text-accent/50 cursor-not-allowed'
                           }`}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4">
-                            <path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                          </svg>
-                          <span className="text-sm font-medium">Post</span>
+                          {isPosting ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span className="text-sm font-medium">Posting...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4">
+                                <path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                              </svg>
+                              <span className="text-sm font-medium">Post</span>
+                            </>
+                          )}
                         </button>
 
                         {/* Instagram Button */}

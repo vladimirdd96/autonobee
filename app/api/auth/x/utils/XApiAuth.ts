@@ -109,6 +109,11 @@ export class XApiAuth {
 
   // Generate Authorization URL
   generateAuthUrl(state: string, forceLogin = false) {
+    // Always use OAuth 2.0 client credentials for user authorization
+    if (!this.clientId) {
+      throw new AuthError('OAuth 2.0 client credentials not configured', 'NO_CLIENT_CREDENTIALS');
+    }
+
     const codeVerifier = this.generateCodeVerifier();
     const codeChallenge = this.generateCodeChallenge(codeVerifier);
     
@@ -401,8 +406,14 @@ export class XApiAuth {
     }
   }
 
+  // Make an app-level request using OAuth 1.0a (MrSorkoSorkos account)
+  async makeAppLevelRequest(endpoint: string, method = 'GET', data: any = null): Promise<any> {
+    // Always use OAuth 1.0a for app-level requests
+    return await this.makeOAuth1Request(endpoint, method, data);
+  }
+
   // Make Authenticated Request
-  async makeAuthenticatedRequest(endpoint: string, method = 'GET', data = null, userId: string | null = null, useOAuth1 = false): Promise<any> {
+  async makeAuthenticatedRequest(endpoint: string, method = 'GET', data: any = null, userId: string | null = null, useOAuth1 = false): Promise<any> {
     // For debugging
     console.log(`[XApiAuth] Making request to: https://api.twitter.com/2/${endpoint} {
   method: '${method}',
@@ -413,8 +424,8 @@ export class XApiAuth {
 }`);
     
     try {
-      // If OAuth 1.0a is specified, use that auth method
-      if (useOAuth1) {
+      // If OAuth 1.0a is specified and we have app credentials, use that auth method
+      if (useOAuth1 && this.apiKey && this.apiKeySecret && this.accessToken && this.accessTokenSecret) {
         return await this.makeOAuth1Request(endpoint, method, data);
       }
       
@@ -440,13 +451,6 @@ export class XApiAuth {
             tokens = await this.refreshAccessToken(userId);
           } catch (refreshError) {
             console.error('Error refreshing token:', refreshError);
-            
-            // If refresh fails with auth error, try direct OAuth 1.0a
-            if (refreshError instanceof AuthError) {
-              console.log('Falling back to OAuth 1.0a after token refresh failure');
-              return await this.makeOAuth1Request(endpoint, method, data);
-            }
-            
             throw refreshError;
           }
         }
@@ -480,13 +484,7 @@ export class XApiAuth {
               responseData: requestError.response.data
             });
             
-            // If unauthorized error, try with OAuth 1.0a as fallback
-            if (requestError.response.status === 401) {
-              console.log('OAuth 2.0 request returned 401, trying OAuth 1.0a as fallback');
-              return await this.makeOAuth1Request(endpoint, method, data);
-            }
-            
-            // Specific error for rate limiting
+            // Handle specific errors
             if (requestError.response.status === 429) {
               throw new AuthError('Rate limit exceeded', 'RATE_LIMIT', requestError.response.data);
             }
@@ -537,12 +535,6 @@ export class XApiAuth {
             responseData: appError.response.data
           });
           
-          // If unauthorized with bearer token, try OAuth 1.0a as final attempt
-          if (appError.response.status === 401) {
-            console.log('Bearer token request returned 401, trying OAuth 1.0a as final attempt');
-            return await this.makeOAuth1Request(endpoint, method, data);
-          }
-          
           if (appError.response.status === 429) {
             throw new AuthError('Rate limit exceeded', 'RATE_LIMIT', appError.response.data);
           }
@@ -559,7 +551,7 @@ export class XApiAuth {
           'REQUEST_FAILED'
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Catch-all for any errors not handled above
       if (error instanceof AuthError) {
         throw error; // Re-throw AuthError instances without modification
@@ -567,9 +559,9 @@ export class XApiAuth {
       
       // Create a general AuthError for anything else
       throw new AuthError(
-        `Request failed: ${error.message || 'Unknown error'}`,
+        `Request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'REQUEST_FAILED',
-        error.response?.data
+        error instanceof Error && 'response' in error ? (error as any).response?.data : undefined
       );
     }
   }
