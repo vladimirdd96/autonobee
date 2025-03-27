@@ -112,11 +112,14 @@ export default function ContentCreation() {
     twitterTemplate: "announcement",
     schedulePost: false,
     scheduleDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    scheduleTime: "12:00"
+    scheduleTime: "12:00",
+    generateImage: false
   });
   
   const [generatedContent, setGeneratedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [charCount, setCharCount] = useState(0);
   const [trendingHashtags, setTrendingHashtags] = useState<string[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -144,26 +147,52 @@ export default function ContentCreation() {
     setAiSuggestions([]);
     setShowSuggestions(false);
     setError(null);
+    setGeneratedImageUrl(null);
+    setGeneratedContent("");
     
     try {
-      const response = await fetch('/api/generate-content', {
+      // Generate both content and image in parallel if image generation is enabled
+      const contentPromise = fetch('/api/generate-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-      });
+      }).then(res => res.json());
 
-      const data = await response.json();
+      const imagePromise = formData.generateImage ? fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: formData.topic,
+          title: formData.title,
+          keywords: formData.keywords,
+          tone: formData.tone,
+          contentType: formData.contentType
+        }),
+      }).then(res => res.json()) : Promise.resolve(null);
+
+      // Wait for both to complete
+      const [contentData, imageData] = await Promise.all([contentPromise, imagePromise]);
       
-      if (data.error) {
-        throw new Error(data.error);
+      if (contentData.error) {
+        throw new Error(contentData.error);
       }
 
-      setGeneratedContent(data.content);
-      setCharCount(data.content.length);
-      setAiSuggestions(data.suggestions);
+      if (imageData?.error) {
+        throw new Error(imageData.error);
+      }
+
+      setGeneratedContent(contentData.content);
+      setCharCount(contentData.content.length);
+      setAiSuggestions(contentData.suggestions);
       setShowSuggestions(true);
+
+      if (imageData) {
+        setGeneratedImageUrl(imageData.imageUrl);
+      }
     } catch (error) {
       console.error('Error:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate content. Please try again.');
@@ -383,67 +412,89 @@ export default function ContentCreation() {
   }, []);
 
   const handlePostToX = useCallback(async () => {
-    if (!generatedContent) return;
-    
+    if (!isXAuthorized) {
+      setPostError('Please authorize X first');
+      return;
+    }
+
     setIsPosting(true);
     setPostError(null);
-    
+
     try {
-      // First, upload media if any
-      const mediaIds = [];
-      if (mediaAttachments.length > 0) {
-        for (const attachment of mediaAttachments) {
-          // Convert base64 to blob
-          const base64Data = attachment.split(',')[1];
-          const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(res => res.blob());
+      // First, download and upload the image if it exists
+      let mediaId: string | undefined;
+      
+      if (generatedImageUrl) {
+        try {
+          console.log('Downloading generated image:', generatedImageUrl);
+          const imageResponse = await fetch(generatedImageUrl);
+          if (!imageResponse.ok) throw new Error('Failed to download image');
           
-          // Create form data
+          const imageBlob = await imageResponse.blob();
           const formData = new FormData();
-          formData.append('media', blob, 'image.jpg');
-          
-          // Upload media using app-level OAuth 1.0a
-          const uploadResponse = await fetch('/api/x/upload-media', {
+          formData.append('media', imageBlob, 'generated-image.png');
+
+          console.log('Uploading image to X');
+          const uploadResponse = await fetch('/api/upload-media', {
             method: 'POST',
-            body: formData
+            body: formData,
           });
+
+          if (!uploadResponse.ok) throw new Error('Failed to upload image');
+
+          const uploadData = await uploadResponse.json();
+          if (uploadData.error) throw new Error(uploadData.error);
           
-          if (!uploadResponse.ok) {
-            throw new Error('Failed to upload media');
-          }
-          
-          const { media_id } = await uploadResponse.json();
-          mediaIds.push(media_id);
+          mediaId = uploadData.mediaId;
+          console.log('Image uploaded successfully, mediaId:', mediaId);
+        } catch (imageError) {
+          console.error('Error handling image:', imageError);
+          setPostError('Failed to process image, but will attempt to post content');
         }
       }
-      
-      // Post the tweet using user's OAuth 2.0 authorization
-      const response = await fetch('/api/x/post', {
+
+      // Post to X with content and media
+      console.log('Posting to X with content and mediaId:', { content: generatedContent, mediaId });
+      const postResponse = await fetch('/api/post-to-x', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: generatedContent,
-          mediaIds
-        })
+          content: generatedContent,
+          mediaId: mediaId,
+        }),
       });
+
+      if (!postResponse.ok) throw new Error('Failed to post to X');
+
+      const postData = await postResponse.json();
+      if (postData.error) throw new Error(postData.error);
+
+      // Clear the form and generated content on success
+      setFormData(prev => ({
+        ...prev,
+        title: "",
+        topic: "",
+        keywords: "",
+        instructions: "",
+        generateImage: false
+      }));
+      setGeneratedContent("");
+      setGeneratedImageUrl(null);
+      setCharCount(0);
+      setAiSuggestions([]);
+      setShowSuggestions(false);
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to post tweet');
-      }
-      
-      // Clear the form and show success message
-      setGeneratedContent('');
-      setMediaAttachments([]);
-      alert('Tweet posted successfully!');
-    } catch (error: any) {
-      console.error('Error posting tweet:', error);
-      setPostError(error.message || 'Failed to post tweet');
+      // Show success message
+      alert('Posted successfully to X!');
+    } catch (error) {
+      console.error('Error posting to X:', error);
+      setPostError(error instanceof Error ? error.message : 'Failed to post to X');
     } finally {
       setIsPosting(false);
     }
-  }, [generatedContent, mediaAttachments]);
+  }, [generatedContent, generatedImageUrl, isXAuthorized]);
 
   return (
     <>
@@ -740,6 +791,34 @@ export default function ContentCreation() {
                               />
                             </div>
                           </div>
+
+                          <div className="space-y-4">
+                            <label className="block text-sm font-medium text-gray-200">
+                              Generate Image
+                            </label>
+                            <div className="flex items-center space-x-4">
+                              <label className="inline-flex items-center">
+                                <input
+                                  type="radio"
+                                  name="generateImage"
+                                  checked={formData.generateImage}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, generateImage: true }))}
+                                  className="form-radio text-blue-500"
+                                />
+                                <span className="ml-2 text-gray-200">Yes</span>
+                              </label>
+                              <label className="inline-flex items-center">
+                                <input
+                                  type="radio"
+                                  name="generateImage"
+                                  checked={!formData.generateImage}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, generateImage: false }))}
+                                  className="form-radio text-blue-500"
+                                />
+                                <span className="ml-2 text-gray-200">No</span>
+                              </label>
+                            </div>
+                          </div>
                         </div>
                         
                         <div className="mt-auto pt-2">
@@ -753,7 +832,7 @@ export default function ContentCreation() {
                                 <>
                                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    <path className="opacity-75" fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6V2z"></path>
                                   </svg>
                                   Generating...
                                 </>
@@ -805,7 +884,41 @@ export default function ContentCreation() {
                       {/* Content Area - Scrollable */}
                       <div className="flex-1 overflow-hidden flex flex-col">
                         <div className="flex-1 overflow-y-auto">
-                          {generatedContent ? (
+                          {!generatedContent ? (
+                            <div className="h-full flex flex-col items-center justify-center">
+                              {isGenerating ? (
+                                <div className="flex flex-col items-center gap-4">
+                                  <div className="relative flex">
+                                    <div className="absolute animate-ping inline-flex h-full w-full rounded-full bg-primary opacity-20"></div>
+                                    <div className="relative inline-flex rounded-full h-24 w-24 bg-primary/20">
+                                      <svg className="animate-spin h-12 w-12 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6V2z"></path>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                  <div className="text-accent/60 text-center space-y-1">
+                                    <p className="font-medium">Generating your content</p>
+                                    <p className="text-sm">This might take a few moments...</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div>
+                                    <Image 
+                                      src="/images/ai-writing.jpg" 
+                                      alt="AI Writing" 
+                                      width={300}
+                                      height={200}
+                                      className="rounded-lg mb-4"
+                                      unoptimized
+                                    />
+                                  </div>
+                                  <p className="text-accent/60 text-center mt-4">Your generated content will appear here</p>
+                                </>
+                              )}
+                            </div>
+                          ) : (
                             <div className="space-y-4">
                               {formData.contentType === "twitter" && (
                                 <div className="bg-background/50 border border-accent/20 rounded-xl p-4">
@@ -820,9 +933,23 @@ export default function ContentCreation() {
                                       </div>
                                       <div className="text-accent mt-1 whitespace-pre-wrap">{generatedContent}</div>
                                       
-                                      {mediaAttachments.length > 0 && (
-                                        <div className={`mt-3 grid ${mediaAttachments.length === 1 ? 'grid-cols-1' : mediaAttachments.length === 2 ? 'grid-cols-2' : 'grid-cols-2'} gap-2 rounded-xl overflow-hidden border border-accent/10`}>
-                                          {mediaAttachments.map((src, index) => (
+                                      {/* Show either generated image or uploaded media attachments */}
+                                      {(generatedImageUrl || mediaAttachments.length > 0) && (
+                                        <div className={`mt-3 grid ${(generatedImageUrl || mediaAttachments.length === 1) ? 'grid-cols-1' : mediaAttachments.length === 2 ? 'grid-cols-2' : 'grid-cols-2'} gap-2 rounded-xl overflow-hidden border border-accent/10`}>
+                                          {generatedImageUrl && (
+                                            <div className="relative w-full">
+                                              <div className="aspect-[16/9] relative">
+                                                <Image 
+                                                  src={generatedImageUrl}
+                                                  alt="Generated content image"
+                                                  fill
+                                                  className="object-contain bg-gray-900/50"
+                                                  unoptimized
+                                                />
+                                              </div>
+                                            </div>
+                                          )}
+                                          {!generatedImageUrl && mediaAttachments.map((src, index) => (
                                             <div key={index} className={`${mediaAttachments.length > 2 && index >= 2 ? 'h-24' : 'h-48'}`}>
                                               <img 
                                                 src={src} 
@@ -914,20 +1041,6 @@ export default function ContentCreation() {
                                   </div>
                                 )}
                               </div>
-                            </div>
-                          ) : (
-                            <div className="h-full flex flex-col items-center justify-center">
-                              <div>
-                                <Image 
-                                  src="/images/ai-writing.jpg" 
-                                  alt="AI Writing" 
-                                  width={300}
-                                  height={200}
-                                  className="rounded-lg mb-4"
-                                  unoptimized
-                                />
-                              </div>
-                              <p className="text-accent/60 text-center mt-4">Your generated content will appear here</p>
                             </div>
                           )}
                         </div>
