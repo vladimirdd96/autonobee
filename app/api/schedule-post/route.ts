@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
-import { auth } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!session) {
+    const cookieStore = cookies();
+    const userId = cookieStore.get('x_user_id')?.value;
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     const scheduledPost = {
-      userId: session.user.id,
+      userId,
       content,
       mediaId,
       scheduledTime,
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
     await kv.set(scheduledPostId, scheduledPost);
     
     // Add to user's scheduled posts list
-    await kv.lpush(`user:${session.user.id}:scheduled_posts`, scheduledPostId);
+    await kv.lpush(`user:${userId}:scheduled_posts`, scheduledPostId);
 
     return NextResponse.json({ 
       success: true, 
