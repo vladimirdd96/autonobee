@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { useAuth } from '@/contexts/AuthContext';
 import { Lock } from 'lucide-react';
+import JSZip from 'jszip';
 
 const ErrorNotification = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -23,7 +24,7 @@ const ErrorNotification = ({ message, onClose }: { message: string; onClose: () 
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -100, scale: 0.9 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="fixed top-4 right-4 z-50"
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-50"
       >
         <div className="relative">
           <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded-xl p-4 shadow-lg max-w-md">
@@ -97,6 +98,74 @@ const ErrorNotification = ({ message, onClose }: { message: string; onClose: () 
   );
 };
 
+const SuccessNotification = ({ message, onClose }: { message: string; onClose: () => void }) => {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: -100, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -100, scale: 0.9 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-50"
+      >
+        <div className="relative">
+          <div className="bg-green-500/10 backdrop-blur-sm border border-green-500/20 rounded-xl p-4 shadow-lg max-w-md">
+            <div className="flex items-start gap-3 text-green-500">
+              <div className="mt-1">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-5 w-5" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                </motion.div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium mb-1">Success</h3>
+                <p className="text-sm text-green-500/80">{message}</p>
+              </div>
+              <button 
+                onClick={onClose}
+                className="text-green-500/60 hover:text-green-500 transition-colors p-1 hover:bg-green-500/10 rounded-lg"
+              >
+                <motion.div
+                  whileHover={{ rotate: 90 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-4 w-4" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </motion.div>
+              </button>
+            </div>
+          </div>
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="absolute inset-0 -z-10 bg-green-500/10 rounded-xl blur-xl"
+          />
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 export default function ContentCreation() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -132,6 +201,7 @@ export default function ContentCreation() {
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -252,18 +322,38 @@ export default function ContentCreation() {
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(generatedContent);
-    alert("Content copied to clipboard!");
+    setSuccessMessage("Content copied to clipboard!");
   }, [generatedContent]);
 
-  const handleDownload = useCallback(() => {
-    const element = document.createElement("a");
-    const file = new Blob([generatedContent], {type: "text/plain"});
-    element.href = URL.createObjectURL(file);
-    element.download = `${formData.title || formData.topic || "generated-content"}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  }, [generatedContent, formData.title, formData.topic]);
+  const handleDownload = useCallback(async () => {
+    try {
+      // Create a zip file
+      const zip = new JSZip();
+      
+      // Add text content
+      zip.file(`${formData.title || formData.topic || "generated-content"}.txt`, generatedContent);
+      
+      // Add image if exists
+      if (generatedImageUrl) {
+        const imageResponse = await fetch(generatedImageUrl);
+        const imageBlob = await imageResponse.blob();
+        zip.file("generated-image.png", imageBlob);
+      }
+      
+      // Generate and download zip
+      const content = await zip.generateAsync({ type: "blob" });
+      const element = document.createElement("a");
+      element.href = URL.createObjectURL(content);
+      element.download = `${formData.title || formData.topic || "generated-content"}.zip`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      setSuccessMessage("Content downloaded successfully!");
+    } catch (error) {
+      console.error('Error downloading content:', error);
+      setError("Failed to download content. Please try again.");
+    }
+  }, [generatedContent, generatedImageUrl, formData.title, formData.topic]);
 
   const handleMediaUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -304,11 +394,13 @@ export default function ContentCreation() {
     const timeUntilPost = scheduledTime.getTime() - now.getTime();
     
     if (timeUntilPost <= 0) {
-      alert("Please select a future date and time.");
+      setError("Please select a future date and time.");
       return;
     }
     
-    alert(`Your post has been scheduled for ${scheduledTime.toLocaleString()}`);
+    setSuccessMessage(`Your post has been scheduled for ${scheduledTime.toLocaleString()}`);
+    // Close the schedule dropdown
+    setFormData(prev => ({ ...prev, schedulePost: false }));
   }, [formData.scheduleDate, formData.scheduleTime]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -485,7 +577,7 @@ export default function ContentCreation() {
       setShowSuggestions(false);
       
       // Show success message
-      alert('Posted successfully to X!');
+      setSuccessMessage('Posted successfully to X!');
     } catch (error) {
       console.error('Error posting to X:', error);
       setPostError(error instanceof Error ? error.message : 'Failed to post to X');
@@ -498,9 +590,14 @@ export default function ContentCreation() {
     setShowAdvancedSettings(prev => !prev);
   }, []);
 
+  const handleDismissSuccess = useCallback(() => {
+    setSuccessMessage(null);
+  }, []);
+
   return (
     <>
       {error && <ErrorNotification message={error} onClose={handleDismissError} />}
+      {successMessage && <SuccessNotification message={successMessage} onClose={handleDismissSuccess} />}
       <Layout>
         <div className="relative">
           {!isXAuthorized && (
@@ -827,7 +924,7 @@ export default function ContentCreation() {
                           <div className="absolute inset-0 bg-gradient-to-r from-primary/50 via-primary to-primary/50 animate-[gradient_3s_ease-in-out_infinite]"></div>
                           <button 
                             type="submit" 
-                            className={`relative w-full py-3 bg-background text-primary font-medium rounded-md transition-colors flex items-center justify-center ${!formData.topic ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10'}`}
+                            className={`relative w-full py-3 bg-background text-primary font-medium rounded-md transition-colors flex items-center justify-center hover:text-white ${!formData.topic ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10'}`}
                             disabled={isGenerating || !formData.topic}
                           >
                             <div className="relative z-10 flex items-center justify-center">
