@@ -388,7 +388,7 @@ export default function ContentCreation() {
     setFormData(prev => ({ ...prev, schedulePost: !prev.schedulePost }));
   }, []);
 
-  const handleSchedulePublish = useCallback(() => {
+  const handleSchedulePublish = useCallback(async () => {
     const scheduledTime = new Date(`${formData.scheduleDate}T${formData.scheduleTime}`);
     const now = new Date();
     const timeUntilPost = scheduledTime.getTime() - now.getTime();
@@ -397,11 +397,83 @@ export default function ContentCreation() {
       setError("Please select a future date and time.");
       return;
     }
-    
-    setSuccessMessage(`Your post has been scheduled for ${scheduledTime.toLocaleString()}`);
-    // Close the schedule dropdown
-    setFormData(prev => ({ ...prev, schedulePost: false }));
-  }, [formData.scheduleDate, formData.scheduleTime]);
+
+    setIsPosting(true);
+    setPostError(null);
+
+    try {
+      // First, handle the image if it exists
+      let mediaId: string | undefined;
+      
+      if (generatedImageUrl) {
+        try {
+          const imageResponse = await fetch(generatedImageUrl);
+          if (!imageResponse.ok) throw new Error('Failed to download image');
+          
+          const imageBlob = await imageResponse.blob();
+          const formData = new FormData();
+          formData.append('media', imageBlob, 'generated-image.png');
+
+          const uploadResponse = await fetch('/api/upload-media', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) throw new Error('Failed to upload image');
+
+          const uploadData = await uploadResponse.json();
+          if (uploadData.error) throw new Error(uploadData.error);
+          
+          mediaId = uploadData.mediaId;
+        } catch (imageError) {
+          console.error('Error handling image:', imageError);
+          setPostError('Failed to process image, but will attempt to schedule post');
+        }
+      }
+
+      // Schedule the post
+      const scheduleResponse = await fetch('/api/schedule-post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: generatedContent,
+          mediaId,
+          scheduledTime: scheduledTime.toISOString(),
+        }),
+      });
+
+      if (!scheduleResponse.ok) {
+        const errorData = await scheduleResponse.json();
+        throw new Error(errorData.error || 'Failed to schedule post');
+      }
+
+      // Clear the form and generated content
+      setFormData(prev => ({
+        ...prev,
+        title: "",
+        topic: "",
+        keywords: "",
+        instructions: "",
+        generateImage: false,
+        schedulePost: false // Close the schedule dropdown
+      }));
+      setGeneratedContent("");
+      setGeneratedImageUrl(null);
+      setCharCount(0);
+      setAiSuggestions([]);
+      setShowSuggestions(false);
+      
+      // Show success message
+      setSuccessMessage(`Your post has been scheduled for ${scheduledTime.toLocaleString()}`);
+    } catch (error) {
+      console.error('Error scheduling post:', error);
+      setPostError(error instanceof Error ? error.message : 'Failed to schedule post');
+    } finally {
+      setIsPosting(false);
+    }
+  }, [formData.scheduleDate, formData.scheduleTime, generatedContent, generatedImageUrl]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -545,14 +617,14 @@ export default function ContentCreation() {
 
       // Post to X with content and media
       console.log('Posting to X with content and mediaId:', { content: generatedContent, mediaId });
-      const postResponse = await fetch('/api/post-to-x', {
+      const postResponse = await fetch('/api/x/post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: generatedContent,
-          mediaId: mediaId,
+          text: generatedContent,
+          mediaIds: mediaId ? [mediaId] : [],
         }),
       });
 
@@ -1081,7 +1153,7 @@ export default function ContentCreation() {
               </div>
 
               {/* Action Buttons Container */}
-              {generatedContent && (
+              { (
                 <div className="mt-8 max-w-4xl mx-auto">
                   <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6">
                     <div className="flex flex-wrap gap-4 justify-center">
@@ -1100,10 +1172,10 @@ export default function ContentCreation() {
                           </>
                         ) : (
                           <>
+                            Post to 
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4">
                               <path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                             </svg>
-                            Post to X
                           </>
                         )}
                       </button>
@@ -1122,33 +1194,45 @@ export default function ContentCreation() {
                         {formData.schedulePost && (
                           <div className="absolute top-full mt-2 right-0 bg-background/95 backdrop-blur-sm border border-primary/10 rounded-xl p-4 w-72 z-50">
                             <div className="space-y-4">
-                              <div>
-                                <label className="block text-accent text-sm mb-1">Date</label>
-                                <input
-                                  type="date"
-                                  name="scheduleDate"
-                                  value={formData.scheduleDate}
-                                  onChange={handleChange}
-                                  min={new Date().toISOString().split('T')[0]}
-                                  className="w-full p-2 bg-background/50 border border-accent/30 rounded-lg text-accent text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-accent text-sm mb-1">Time</label>
-                                <input
-                                  type="time"
-                                  name="scheduleTime"
-                                  value={formData.scheduleTime}
-                                  onChange={handleChange}
-                                  className="w-full p-2 bg-background/50 border border-accent/30 rounded-lg text-accent text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                                />
-                              </div>
-                              <button
-                                onClick={handleSchedulePublish}
-                                className="w-full px-4 py-2 bg-primary text-background rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-                              >
-                                Schedule Post
-                              </button>
+                              {!isPosting ? (
+                                <>
+                                  <div>
+                                    <label className="block text-accent text-sm mb-1">Date</label>
+                                    <input
+                                      type="date"
+                                      name="scheduleDate"
+                                      value={formData.scheduleDate}
+                                      onChange={handleChange}
+                                      min={new Date().toISOString().split('T')[0]}
+                                      className="w-full p-2 bg-background/50 border border-accent/30 rounded-lg text-accent text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-accent text-sm mb-1">Time</label>
+                                    <input
+                                      type="time"
+                                      name="scheduleTime"
+                                      value={formData.scheduleTime}
+                                      onChange={handleChange}
+                                      className="w-full p-2 bg-background/50 border border-accent/30 rounded-lg text-accent text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={handleSchedulePublish}
+                                    className="w-full px-4 py-2 bg-primary text-background rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+                                  >
+                                    Schedule Post
+                                  </button>
+                                </>
+                              ) : (
+                                <div className="flex items-center justify-center gap-2 text-accent">
+                                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Scheduling post...
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
