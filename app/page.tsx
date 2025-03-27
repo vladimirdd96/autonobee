@@ -471,7 +471,7 @@ const pricingPlans = [
       "Post scheduling (up to 7 days)",
       "Real-time engagement analytics"
     ],
-    buttonText: "Get Started",
+    buttonText: "Activated",
     isPopular: false
   },
   {
@@ -487,7 +487,7 @@ const pricingPlans = [
       "Engagement-optimized posting times",
       "Trend prediction & content suggestions"
     ],
-    buttonText: "Try Professional",
+    buttonText: "Activated",
     isPopular: true
   },
   {
@@ -503,7 +503,7 @@ const pricingPlans = [
       "Advanced ROI & conversion tracking",
       "Dedicated success manager"
     ],
-    buttonText: "Contact Sales",
+    buttonText: "Under development",
     isPopular: false
   }
 ];

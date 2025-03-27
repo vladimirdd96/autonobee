@@ -205,44 +205,43 @@ export default function Navbar() {
                     </button>
                   </MovingBorder>
                   
-                  {/* X Account Dropdown (positioned absolutely) */}
+                  {/* X Account Dropdown */}
+                  {isXAuthorized && isDesktopXDropdownOpen && (
+                    <div 
+                      id="x-dropdown"
+                      className="absolute w-64 bg-background/95 backdrop-blur-sm border border-primary/10 rounded-md shadow-lg py-2 z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200"
+                      style={{ 
+                        top: '100%',
+                        right: '0',
+                        marginTop: '0.5rem',
+                        transformOrigin: 'top right'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="absolute right-3 -top-2 w-4 h-4 bg-background/95 border-t border-l border-primary/10 transform rotate-45"></div>
+                      {xUser && (
+                        <div className="px-4 py-2 border-b border-primary/10 mb-2">
+                          <p className="font-medium">{xUser.name}</p>
+                          <p className="text-sm text-accent/80">@{xUser.username}</p>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          logoutX();
+                          setIsDesktopXDropdownOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-accent hover:bg-primary/10 flex items-center gap-2 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Disconnect X Account
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
           
-          {/* Desktop dropdown (positioned fixed at the right position) */}
-          {isXAuthorized && isDesktopXDropdownOpen && isDesktop && (
-            <div 
-              id="x-dropdown"
-              className="fixed w-64 bg-background/95 backdrop-blur-sm border border-primary/10 rounded-md shadow-lg py-2 z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200"
-              style={{ 
-                top: '4.5rem', 
-                right: '1rem',
-                transformOrigin: 'top right'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="absolute right-3 -top-2 w-4 h-4 bg-background/95 border-t border-l border-primary/10 transform rotate-45"></div>
-              {xUser && (
-                <div className="px-4 py-2 border-b border-primary/10 mb-2">
-                  <p className="font-medium">{xUser.name}</p>
-                  <p className="text-sm text-accent/80">@{xUser.username}</p>
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  logoutX();
-                  setIsDesktopXDropdownOpen(false);
-                }}
-                className="w-full px-4 py-2 text-left text-accent hover:bg-primary/10 flex items-center gap-2 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Disconnect X Account
-              </button>
-            </div>
-          )}
-
           {/* Mobile Authorize X Button */}
           <div className="md:hidden relative z-50 shrink-0">
             <button 
