@@ -365,7 +365,7 @@ export class XApiAuth {
   }
 
   // Make an authenticated request specifically using OAuth 1.0a
-  async makeOAuth1Request(endpoint: string, method = 'GET', data = null): Promise<any> {
+  async makeOAuth1Request(endpoint: string, method = 'GET', data: Record<string, any> | null = null): Promise<any> {
     // Determine which API version to use
     const isV1Endpoint = endpoint.startsWith('trends/') || endpoint.startsWith('geo/') || endpoint.includes('trends');
     const apiVersion = isV1Endpoint ? '1.1' : '2';
