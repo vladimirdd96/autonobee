@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { checkNFTOwnership } from '@/utils/nft';
+import { checkNFTOwnership } from '@/utils/metaplex';
 import Cookies from 'js-cookie';
 
 interface WalletContextType {

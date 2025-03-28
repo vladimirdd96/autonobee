@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useWallet } from '@/contexts/WalletContext';
-import { mintNFT } from '@/utils/nft';
+import { prepareNFTTransaction } from '@/utils/metaplex';
 import { MovingBorder } from '@/components/aceternity/moving-border';
 import { BackgroundBeams } from '@/components/aceternity/background-beams';
 import { SparklesCore } from '@/components/aceternity/sparkles';
@@ -56,20 +56,25 @@ const deploymentSteps = [
 ];
 
 export default function MintPage() {
-  const { publicKey, checkNFT } = useWallet();
+  const { publicKey, checkNFT, wallet } = useWallet();
   const [selectedTier, setSelectedTier] = useState<'basic' | 'pro' | null>(null);
   const [isMinting, setIsMinting] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleMint = async () => {
-    if (!publicKey || !selectedTier) return;
+    if (!publicKey || !selectedTier || !wallet) return;
 
     try {
       setIsMinting(true);
       setError(null);
       
-      const result = await mintNFT(publicKey, selectedTier);
+      // Prepare and send transaction for client-side minting
+      const { transactionBuilder, metaplex } = await prepareNFTTransaction(publicKey, selectedTier, wallet);
+      
+      // Build and send the transaction
+      const { signature } = await transactionBuilder.sendAndConfirm(metaplex);
+      console.log("Transaction confirmed with signature:", signature);
       
       // Set cookies for middleware
       Cookies.set('has_nft', 'true', { path: '/' });
