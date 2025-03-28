@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WalletProvider } from "@/contexts/WalletContext";
 
 const openSans = Open_Sans({
   weight: ['300', '400', '500', '600', '700'],
@@ -36,11 +37,13 @@ export default function RootLayout({
       </head>
       <body className={`${openSans.variable} ${koulen.variable} font-sans bg-background text-accent`}>
         <AuthProvider>
-          <div className="relative z-10">
-            <Navbar />
-            {children}
-            <Footer />
-          </div>
+          <WalletProvider>
+            <div className="relative z-10">
+              <Navbar />
+              {children}
+              <Footer />
+            </div>
+          </WalletProvider>
         </AuthProvider>
       </body>
     </html>

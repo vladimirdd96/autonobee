@@ -13,8 +13,26 @@ import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { useAuth } from '@/contexts/AuthContext';
-import { Lock } from 'lucide-react';
+import { Lock, Settings, Loader2, Wand2 } from 'lucide-react';
 import JSZip from 'jszip';
+
+interface FormData {
+  title: string;
+  contentType: string;
+  topic: string;
+  tone: string;
+  keywords: string;
+  length: string;
+  instructions: string;
+  includeHashtags: boolean;
+  includeEmojis: boolean;
+  twitterTemplate: string;
+  schedulePost: boolean;
+  scheduleDate: string;
+  scheduleTime: string;
+  generateImage: boolean;
+  content: string;
+}
 
 const ErrorNotification = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -168,7 +186,7 @@ const SuccessNotification = ({ message, onClose }: { message: string; onClose: (
 
 export default function ContentCreation() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: "",
     contentType: "twitter",
     topic: "",
@@ -182,7 +200,8 @@ export default function ContentCreation() {
     schedulePost: false,
     scheduleDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
     scheduleTime: "12:00",
-    generateImage: false
+    generateImage: false,
+    content: ""
   });
   
   const [generatedContent, setGeneratedContent] = useState("");
@@ -707,312 +726,102 @@ export default function ContentCreation() {
                 <div className="lg:col-span-1">
                   <div className="w-full">
                     <div className={`bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 ${showAdvancedSettings ? 'min-h-[1000px]' : 'min-h-[600px]'} transition-all duration-300`}>
-                      <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Essential Fields */}
+                      <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Content Type - Moved to compact form */}
                         <div className="space-y-4">
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Title</label>
-                            <input 
-                              type="text" 
-                              name="title"
-                              value={formData.title}
-                              onChange={handleChange}
-                              onKeyDown={handleKeyDown}
-                              placeholder="Enter a title" 
-                              className="w-full p-3 bg-background/50 border border-accent/30 rounded-lg text-accent focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Topic <span className="text-red-500">*</span></label>
-                            <input 
-                              type="text" 
-                              name="topic"
-                              value={formData.topic}
-                              onChange={handleChange}
-                              onKeyDown={handleKeyDown}
-                              placeholder="Enter a topic" 
-                              className={`w-full p-3 bg-background/50 border ${!formData.topic ? 'border-red-500/50' : 'border-accent/30'} rounded-lg text-accent focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all`}
-                              required
-                            />
-                            {!formData.topic && (
-                              <p className="mt-1 text-sm text-red-500">Topic is required</p>
-                            )}
-                          </div>
-
-                          {/* Content Type - Moved to compact form */}
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Content Type</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {contentTypeOptions.map((option) => (
+                          <label className="block text-accent font-medium">Content Type</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {contentTypeOptions.map((option) => (
+                              <div 
+                                key={option.value} 
+                                onClick={() => option.available && setFormData(prev => ({ ...prev, contentType: option.value }))}
+                                className={`relative ${option.available ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                              >
                                 <div 
-                                  key={option.value} 
-                                  onClick={() => option.available && setFormData(prev => ({ ...prev, contentType: option.value }))}
-                                  className={`relative ${option.available ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                  className={`text-center p-3 rounded-lg transition-all ${
+                                    formData.contentType === option.value 
+                                      ? 'bg-primary/20 border-2 border-primary/50' 
+                                      : 'bg-background/30 border border-accent/10'
+                                  }`}
                                 >
-                                  <div 
-                                    className={`text-center p-3 rounded-lg transition-all ${formData.contentType === option.value ? 'bg-primary/20 border-2 border-primary/50' : 'bg-background/30 border border-accent/10'}`}
-                                  >
-                                    <div className="flex items-center justify-center gap-2">
-                                      <span className="text-accent">{option.icon}</span>
-                                      <span>{option.label}</span>
-                                      {!option.available && <span className="text-xs text-accent/60">(Coming Soon)</span>}
-                                    </div>
+                                  <div className="flex items-center justify-center gap-2">
+                                    <span className="text-accent">{option.icon}</span>
+                                    <span>{option.label}</span>
+                                    {!option.available && <span className="text-xs text-accent/60">(Coming Soon)</span>}
                                   </div>
-                                  {!option.available && (
-                                    <div className="absolute top-1 right-1 bg-primary/80 text-xs text-black px-1 rounded-sm">
-                                      Soon
-                                    </div>
-                                  )}
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Generate Image</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div 
-                                onClick={() => setFormData(prev => ({ ...prev, generateImage: true }))}
-                                className={`cursor-pointer p-3 rounded-lg transition-all text-center ${formData.generateImage ? 'bg-primary/20 border-2 border-primary/50' : 'bg-background/30 border border-accent/10'}`}
-                              >
-                                <span className="text-accent/80 text-sm">Yes</span>
+                                {!option.available && (
+                                  <div className="absolute top-1 right-1 bg-primary/80 text-xs text-black px-1 rounded-sm">
+                                    Soon
+                                  </div>
+                                )}
                               </div>
-                              <div 
-                                onClick={() => setFormData(prev => ({ ...prev, generateImage: false }))}
-                                className={`cursor-pointer p-3 rounded-lg transition-all text-center ${!formData.generateImage ? 'bg-primary/20 border-2 border-primary/50' : 'bg-background/30 border border-accent/10'}`}
-                              >
-                                <span className="text-accent/80 text-sm">No</span>
-                              </div>
-                            </div>
+                            ))}
                           </div>
                         </div>
 
-                        {/* Advanced Settings Button */}
-                        <button
-                          type="button"
-                          onClick={toggleAdvancedSettings}
-                          className="w-full py-2 px-4 bg-background/30 border border-accent/20 rounded-lg text-accent hover:bg-background/40 transition-all flex items-center justify-center gap-2"
-                        >
-                          <span>{showAdvancedSettings ? 'Hide' : 'Show'} Advanced Settings</span>
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            className={`h-4 w-4 transition-transform ${showAdvancedSettings ? 'rotate-180' : ''}`} 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
+                        {/* Main Content Input */}
+                        <div className="space-y-4">
+                          <label className="block text-accent font-medium">Content</label>
+                          <textarea
+                            value={formData.content}
+                            onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                            className="w-full h-32 bg-background/30 border border-accent/10 rounded-lg p-3 text-accent placeholder-accent/50 focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                            placeholder="Enter your content here..."
+                          />
+                        </div>
+
+                        {/* Advanced Settings Toggle */}
+                        <div className="flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                            className="text-accent/80 hover:text-accent flex items-center gap-2 transition-colors"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
+                            <Settings className="w-4 h-4" />
+                            Advanced Settings
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isGenerating}
+                            className="px-4 py-2 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+                          >
+                            {isGenerating ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="w-4 h-4" />
+                                Generate
+                              </>
+                            )}
+                          </button>
+                        </div>
 
                         {/* Advanced Settings */}
                         <div className={`space-y-4 transition-all duration-300 ease-in-out ${showAdvancedSettings ? 'opacity-100 max-h-[2000px]' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-                          {/* Remove Content Type from here since it's moved to compact form */}
-                          
                           {formData.contentType === "twitter" && (
-                            <div>
-                              <label className="block text-accent mb-2 font-medium">Post Template</label>
-                              <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-4">
+                              <label className="block text-accent font-medium">Post Template</label>
+                              <div className="grid grid-cols-2 gap-3">
                                 {["announcement", "question", "tip", "poll"].map((template) => (
                                   <div 
                                     key={template} 
                                     onClick={() => setFormData(prev => ({ ...prev, twitterTemplate: template }))}
-                                    className={`cursor-pointer p-2 rounded-lg transition-all text-center capitalize ${formData.twitterTemplate === template ? 'bg-primary/20 border-2 border-primary/50' : 'bg-background/30 border border-accent/10'}`}
+                                    className={`cursor-pointer p-3 rounded-lg transition-all text-center capitalize ${
+                                      formData.twitterTemplate === template 
+                                        ? 'bg-primary/20 border-2 border-primary/50' 
+                                        : 'bg-background/30 border border-accent/10'
+                                    }`}
                                   >
-                                    <span className="text-accent/80 text-sm">{template}</span>
+                                    <span className="text-accent/80">{template}</span>
                                   </div>
                                 ))}
                               </div>
                             </div>
                           )}
-                          
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Keywords</label>
-                            <input 
-                              type="text" 
-                              name="keywords"
-                              value={formData.keywords}
-                              onChange={handleChange}
-                              onKeyDown={handleKeyDown}
-                              placeholder="Enter keywords (comma separated)" 
-                              className="w-full p-3 bg-background/50 border border-accent/30 rounded-lg text-accent focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                            />
-                            {formData.contentType === "twitter" && trendingHashtags.length > 0 && (
-                              <div className="mt-2">
-                                <div className="text-xs text-accent/70 mb-1">Trending Hashtags:</div>
-                                <div className="flex flex-wrap gap-1">
-                                  {trendingHashtags.map(tag => (
-                                    <div 
-                                      key={tag} 
-                                      onClick={() => handleHashtagClick(tag)}
-                                      className="bg-primary/10 text-primary text-xs px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors"
-                                    >
-                                      #{tag}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Tone</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {toneOptions.map((tone) => (
-                                <div 
-                                  key={tone} 
-                                  onClick={() => handleRadioChange(tone)}
-                                  className={`cursor-pointer p-2 rounded-lg transition-all text-center ${formData.tone === tone ? 'bg-primary/20 border-2 border-primary/50' : 'bg-background/30 border border-accent/10'}`}
-                                >
-                                  <span className="text-accent/80 text-sm">{tone}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {formData.contentType === "twitter" && (
-                            <div>
-                              <label className="block text-accent mb-2 font-medium">Formatting</label>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div 
-                                  onClick={() => setFormData(prev => ({ ...prev, includeHashtags: !prev.includeHashtags }))}
-                                  className={`cursor-pointer p-2 rounded-lg transition-all flex items-center justify-between ${formData.includeHashtags ? 'bg-primary/20 border-2 border-primary/50' : 'bg-background/30 border border-accent/10'}`}
-                                >
-                                  <span className="text-accent/80 text-sm">Include Hashtags</span>
-                                  <div className={`w-4 h-4 rounded-sm border ${formData.includeHashtags ? 'bg-primary border-primary' : 'border-accent/50'}`}>
-                                    {formData.includeHashtags && <span className="text-black text-xs flex items-center justify-center">✓</span>}
-                                  </div>
-                                </div>
-                                <div 
-                                  onClick={() => setFormData(prev => ({ ...prev, includeEmojis: !prev.includeEmojis }))}
-                                  className={`cursor-pointer p-2 rounded-lg transition-all flex items-center justify-between ${formData.includeEmojis ? 'bg-primary/20 border-2 border-primary/50' : 'bg-background/30 border border-accent/10'}`}
-                                >
-                                  <span className="text-accent/80 text-sm">Include Emojis</span>
-                                  <div className={`w-4 h-4 rounded-sm border ${formData.includeEmojis ? 'bg-primary border-primary' : 'border-accent/50'}`}>
-                                    {formData.includeEmojis && <span className="text-black text-xs flex items-center justify-center">✓</span>}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Length</label>
-                            <select 
-                              name="length"
-                              value={formData.length}
-                              onChange={handleChange}
-                              className="w-full p-3 bg-background/50 border border-accent/30 rounded-lg text-accent focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                            >
-                              <option value="short">Short (100-150 characters)</option>
-                              <option value="medium">Medium (150-200 characters)</option>
-                              <option value="long">Long (200-280 characters)</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-accent mb-2 font-medium">Additional Instructions</label>
-                            <textarea 
-                              name="instructions"
-                              value={formData.instructions}
-                              onChange={handleChange}
-                              onKeyDown={handleKeyDown}
-                              placeholder="Add any specific instructions or details" 
-                              rows={3}
-                              className="w-full p-3 bg-background/50 border border-accent/30 rounded-lg text-accent focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                            />
-                          </div>
-
-                          {formData.contentType === "twitter" && (
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <label className="block text-accent font-medium">Media</label>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowMediaUpload(!showMediaUpload)}
-                                  className="text-primary text-sm hover:underline flex items-center gap-1"
-                                >
-                                  {showMediaUpload ? (
-                                    <>Hide</>
-                                  ) : (
-                                    <>Add Media</>
-                                  )}
-                                </button>
-                              </div>
-                              
-                              {showMediaUpload && (
-                                <div className="mt-2 p-3 bg-background/30 rounded-lg border border-primary/20">
-                                  <div className="mb-3">
-                                    <p className="text-accent/70 text-xs mb-2">Add up to 4 images to increase engagement (PNG, JPG)</p>
-                                    <label className={`flex items-center justify-center p-4 border-2 border-dashed border-accent/20 rounded-lg cursor-pointer hover:border-primary/30 transition-colors ${mediaAttachments.length >= 4 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                      <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        multiple 
-                                        onChange={handleMediaUpload} 
-                                        className="hidden"
-                                        disabled={mediaAttachments.length >= 4}
-                                      />
-                                      <div className="flex flex-col items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-accent/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                        </svg>
-                                        <span className="text-xs text-accent/60 mt-1">Click to upload</span>
-                                      </div>
-                                    </label>
-                                  </div>
-                                  
-                                  {mediaAttachments.length > 0 && (
-                                    <div className="space-y-2">
-                                      {mediaAttachments.map((src, index) => {
-                                        const fileName = src.split('/').pop() || `Attachment ${index + 1}`;
-                                        const displayName = fileName.length > 20 ? fileName.substring(0, 20) + '...' : fileName;
-                                        return (
-                                          <div key={index} className="flex items-center justify-between p-2 bg-background/30 rounded-lg border border-accent/10">
-                                            <span className="text-accent/80 text-sm truncate">{displayName}</span>
-                                            <button
-                                              type="button"
-                                              onClick={() => removeAttachment(index)}
-                                              className="ml-2 p-1 hover:bg-accent/10 rounded-full transition-colors"
-                                            >
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-accent/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                              </svg>
-                                            </button>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Generate Button */}
-                        <div className="relative w-full overflow-hidden rounded-md">
-                          <div className="absolute inset-0 bg-gradient-to-r from-primary/50 via-primary to-primary/50 animate-[gradient_3s_ease-in-out_infinite]"></div>
-                          <button 
-                            type="submit" 
-                            className={`relative w-full py-3 bg-background text-primary font-medium rounded-md transition-colors flex items-center justify-center hover:text-white ${!formData.topic ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10'}`}
-                            disabled={isGenerating || !formData.topic}
-                          >
-                            <div className="relative z-10 flex items-center justify-center">
-                              {isGenerating ? (
-                                <>
-                                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6V2z"></path>
-                                  </svg>
-                                  Generating...
-                                </>
-                              ) : (
-                                <>Generate Content</>
-                              )}
-                            </div>
-                          </button>
                         </div>
                       </form>
                     </div>
@@ -1021,281 +830,14 @@ export default function ContentCreation() {
 
                 {/* Right Column - Preview */}
                 <div className="lg:col-span-1">
-                  <div className="w-full">
-                    <div className={`bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 ${showAdvancedSettings ? showMediaUpload ? 'min-h-[1580px]' : 'min-h-[1430px]' : 'min-h-[640px]'} transition-all duration-300 flex flex-col`}>
-                      {/* Header - Fixed */}
-                      <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-accent">
-                          <AnimatedGradientText text="Preview" />
-                        </h2>
-                        <div className="flex space-x-2">
-                          {formData.contentType === "twitter" && (
-                            <div className={`text-xs px-2 py-1 rounded ${charCount > 280 ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
-                              {charCount}/280
-                            </div>
-                          )}
-                          <button 
-                            onClick={handleCopy}
-                            disabled={!generatedContent}
-                            className="px-3 py-1 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors text-sm disabled:opacity-50"
-                          >
-                            Copy
-                          </button>
-                          <button 
-                            onClick={handleDownload}
-                            disabled={!generatedContent}
-                            className="px-3 py-1 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors text-sm disabled:opacity-50"
-                          >
-                            Download
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Content Area - Centered */}
-                      <div className="flex-1 flex items-center justify-center">
-                        <div className="w-full max-w-full">
-                          {isGenerating ? (
-                            <div className="flex flex-col items-center gap-4">
-                              <div className="relative">
-                                <div className="w-12 h-12 rounded-full border-4 border-primary/20"></div>
-                                <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin absolute top-0 left-0"></div>
-                              </div>
-                              <p className="text-accent/60 text-sm">Generating content...</p>
-                            </div>
-                          ) : !generatedContent ? (
-                            <div className="flex flex-col items-center">
-                              <div>
-                                <Image 
-                                  src="/images/ai-writing.jpg" 
-                                  alt="AI Writing" 
-                                  width={300}
-                                  height={200}
-                                  className="rounded-lg mb-4"
-                                  unoptimized
-                                />
-                              </div>
-                              <p className="text-accent/60 text-center mt-4">Your generated content will appear here</p>
-                            </div>
-                          ) : (
-                            <div className="w-full">
-                              {formData.contentType === "twitter" && (
-                                <div className="bg-background/50 border border-accent/20 rounded-xl p-4">
-                                  <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                                      <span className="text-primary font-bold">A</span>
-                                    </div>
-                                    <div className="flex-1">
-                                      <div className="flex items-center">
-                                        <span className="font-bold text-accent">AutonoBee</span>
-                                        <span className="text-accent/60 text-sm ml-2">@AutonoBee</span>
-                                      </div>
-                                      <div className="text-accent mt-1 whitespace-pre-wrap">{generatedContent}</div>
-                                      
-                                      {/* Show either generated image or uploaded media attachments */}
-                                      {(generatedImageUrl || mediaAttachments.length > 0) && (
-                                        <div className={`mt-3 grid ${(generatedImageUrl || mediaAttachments.length === 1) ? 'grid-cols-1' : mediaAttachments.length === 2 ? 'grid-cols-2' : 'grid-cols-2'} gap-2 rounded-xl overflow-hidden border border-accent/10`}>
-                                          {generatedImageUrl && (
-                                            <div className="relative w-full">
-                                              <div className="aspect-[16/9] relative">
-                                                <Image 
-                                                  src={generatedImageUrl}
-                                                  alt="Generated content image"
-                                                  fill
-                                                  className="object-contain bg-gray-900/50"
-                                                  unoptimized
-                                                />
-                                              </div>
-                                            </div>
-                                          )}
-                                          {!generatedImageUrl && mediaAttachments.map((src, index) => (
-                                            <div key={index} className={`${mediaAttachments.length > 2 && index >= 2 ? 'h-24' : 'h-48'}`}>
-                                              <img 
-                                                src={src} 
-                                                alt={`Attachment ${index + 1}`} 
-                                                className="w-full h-full object-cover"
-                                              />
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                      
-                                      <div className="flex items-center gap-5 mt-3 text-accent/60">
-                                        <div className="flex items-center gap-1">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                          </svg>
-                                          <span className="text-xs">42</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                                          </svg>
-                                          <span className="text-xs">12</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                          </svg>
-                                          <span className="text-xs">124</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                  <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 min-h-[600px]">
+                    <h2 className="text-xl font-bold text-accent mb-4">Preview</h2>
+                    <div className="space-y-4">
+                      {/* Preview content will go here */}
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Action Buttons Container */}
-              { (
-                <div className="mt-8 max-w-4xl mx-auto">
-                  <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6">
-                    <div className="flex flex-wrap gap-4 justify-center">
-                      <button
-                        onClick={handlePostToX}
-                        disabled={isPosting || !isXAuthorized}
-                        className="px-6 py-3 bg-primary text-background rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {isPosting ? (
-                          <>
-                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Posting...
-                          </>
-                        ) : (
-                          <>
-                            Post to 
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4">
-                              <path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                            </svg>
-                          </>
-                        )}
-                      </button>
-
-                      <div className="relative">
-                        <button
-                          onClick={() => setFormData(prev => ({ ...prev, schedulePost: !prev.schedulePost }))}
-                          className="px-6 py-3 bg-primary/10 text-primary rounded-md font-medium hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Scheduled Posting
-                        </button>
-
-                        {formData.schedulePost && (
-                          <div className="absolute top-full mt-2 right-0 bg-background/95 backdrop-blur-sm border border-primary/10 rounded-xl p-4 w-72 z-50">
-                            <div className="space-y-4">
-                              {!isPosting ? (
-                                <>
-                                  <div>
-                                    <label className="block text-accent text-sm mb-1">Date</label>
-                                    <input
-                                      type="date"
-                                      name="scheduleDate"
-                                      value={formData.scheduleDate}
-                                      onChange={handleChange}
-                                      min={new Date().toISOString().split('T')[0]}
-                                      className="w-full p-2 bg-background/50 border border-accent/30 rounded-lg text-accent text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-accent text-sm mb-1">Time</label>
-                                    <input
-                                      type="time"
-                                      name="scheduleTime"
-                                      value={formData.scheduleTime}
-                                      onChange={handleChange}
-                                      className="w-full p-2 bg-background/50 border border-accent/30 rounded-lg text-accent text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                                    />
-                                  </div>
-                                  <button
-                                    onClick={handleSchedulePublish}
-                                    className="w-full px-4 py-2 bg-primary text-background rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-                                  >
-                                    Schedule Post
-                                  </button>
-                                </>
-                              ) : (
-                                <div className="flex items-center justify-center gap-2 text-accent">
-                                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                  </svg>
-                                  Scheduling post...
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={analyzePost}
-                        disabled={isAnalyzing}
-                        className="px-6 py-3 bg-primary/10 text-primary rounded-md font-medium hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <svg className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Analyzing...
-                          </>
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                            Analyze with AI
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* AI Suggestions Panel */}
-                    {showSuggestions && (
-                      <div className="mt-6 bg-background/50 border border-primary/20 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                          </svg>
-                          <h3 className="text-accent font-medium">AI Engagement Assistant</h3>
-                          <button 
-                            onClick={() => setShowSuggestions(false)}
-                            className="ml-auto text-accent/60 hover:text-accent"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                        {aiSuggestions.length > 0 ? (
-                          <ul className="space-y-2">
-                            {aiSuggestions.map((suggestion, i) => (
-                              <li key={i} className="flex items-start gap-2 text-sm text-accent/80">
-                                <div className="text-primary mt-0.5">•</div>
-                                <div>{suggestion}</div>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-accent/80 text-sm">Your post looks great! No suggestions at this time.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

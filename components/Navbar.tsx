@@ -7,6 +7,7 @@ import { MovingBorder } from './aceternity/moving-border';
 import { Menu, X, ChevronDown, ChevronUp, LayoutDashboard, FileEdit, MessageSquare, BarChart2, TrendingUp, Users, Settings, LogOut, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import WalletButton from './WalletButton';
 
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
@@ -153,8 +154,9 @@ export default function Navbar() {
             </Link>
           </div>
           
-          {/* Desktop Authorize X Button */}
+          {/* Desktop Authorize X Button and Wallet Button */}
           <div className="hidden md:flex gap-4 relative z-40 shrink-0">
+            <WalletButton />
             {isDesktop && (
               <div className="relative">
                 {/* Debug indicator */}

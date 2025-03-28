@@ -4,7 +4,7 @@ import { X, Github } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="py-10 border-t border-primary/10 mt-20 backdrop-blur-sm bg-background/90">
+    <footer className="py-10 border-t border-primary/10 backdrop-blur-sm bg-background/90">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1 text-center md:text-left">

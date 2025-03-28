@@ -20,9 +20,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="flex flex-col min-h-screen bg-background pt-16">
       <Sidebar isOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
       <main className={`
+        flex-1
         transition-all duration-300 ease-in-out
         ${isSidebarOpen ? 'ml-64' : 'ml-0'}
         ${isLandingPage ? 'px-4' : 'px-6'}
