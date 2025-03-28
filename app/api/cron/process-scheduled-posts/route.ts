@@ -13,18 +13,30 @@ interface ScheduledPost {
 // This endpoint will be called by a cron job every minute
 export async function GET(req: Request) {
   try {
-    // For build purposes, return a mock response if KV is not available
-    if (process.env.NODE_ENV === 'production' && (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN)) {
+    // Check if KV environment variables are available
+    if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+      console.log('KV environment variables are not set, returning mock response');
       return NextResponse.json({ 
         success: true,
-        message: 'Mock response for build - no scheduled posts to process',
+        message: 'KV environment variables are not set - unable to process scheduled posts',
         processedPosts: 0
       });
     }
 
     // Get all users' scheduled posts lists
     const userKeys = await kv.keys('user:*:scheduled_posts');
+    
+    // If no scheduled posts found, return early
+    if (!userKeys || userKeys.length === 0) {
+      return NextResponse.json({ 
+        success: true,
+        message: 'No scheduled posts found',
+        processedPosts: 0
+      });
+    }
+    
     const now = new Date();
+    let processedCount = 0;
 
     for (const userKey of userKeys) {
       // Get all scheduled post IDs for this user
@@ -62,6 +74,8 @@ export async function GET(req: Request) {
             
             // Remove from scheduled posts list
             await kv.lrem(userKey, 0, postId);
+            
+            processedCount++;
           } catch (error) {
             console.error(`Error posting scheduled content:`, error);
             // Mark as failed
@@ -75,19 +89,18 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      message: processedCount > 0 ? `Processed ${processedCount} posts` : 'No posts needed processing',
+      processedPosts: processedCount
+    });
   } catch (error) {
     console.error('Error processing scheduled posts:', error);
     
-    // For build purposes, return a mock response
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ 
-        success: true,
-        message: 'Mock response for build - no scheduled posts to process',
-        processedPosts: 0
-      });
-    }
-    
-    return NextResponse.json({ error: 'Failed to process scheduled posts' }, { status: 500 });
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to process scheduled posts',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 } 
