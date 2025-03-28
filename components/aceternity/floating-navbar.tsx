@@ -61,13 +61,13 @@ export function FloatingNavbar({
                   "absolute inset-0 rounded-full",
                   (pathname === item.link || 
                    (item.link === '/dashboard' && (
-                     pathname.startsWith('/dashboard') || 
-                     pathname.startsWith('/content-creation') || 
-                     pathname.startsWith('/chat') || 
-                     pathname.startsWith('/analytics') || 
-                     pathname.startsWith('/trends') || 
-                     pathname.startsWith('/team') || 
-                     pathname.startsWith('/settings')
+                     pathname?.startsWith('/dashboard') || 
+                     pathname?.startsWith('/content-creation') || 
+                     pathname?.startsWith('/chat') || 
+                     pathname?.startsWith('/analytics') || 
+                     pathname?.startsWith('/trends') || 
+                     pathname?.startsWith('/team') || 
+                     pathname?.startsWith('/settings')
                    ))) 
                     ? "bg-primary/20 text-white" 
                     : "text-accent hover:text-white"
@@ -80,13 +80,13 @@ export function FloatingNavbar({
                 }}
                 style={{ opacity: (pathname === item.link || 
                   (item.link === '/dashboard' && (
-                    pathname.startsWith('/dashboard') || 
-                    pathname.startsWith('/content-creation') || 
-                    pathname.startsWith('/chat') || 
-                    pathname.startsWith('/analytics') || 
-                    pathname.startsWith('/trends') || 
-                    pathname.startsWith('/team') || 
-                    pathname.startsWith('/settings')
+                    pathname?.startsWith('/dashboard') || 
+                    pathname?.startsWith('/content-creation') || 
+                    pathname?.startsWith('/chat') || 
+                    pathname?.startsWith('/analytics') || 
+                    pathname?.startsWith('/trends') || 
+                    pathname?.startsWith('/team') || 
+                    pathname?.startsWith('/settings')
                   ))) ? 1 : 0 }}
               />
               <span className="relative z-10 text-sm font-medium">{item.name}</span>
