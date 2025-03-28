@@ -9,6 +9,11 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
   },
+  webpack: (config) => {
+    // Disable minification completely
+    config.optimization.minimize = false;
+    return config;
+  },
 }
 
 module.exports = nextConfig
