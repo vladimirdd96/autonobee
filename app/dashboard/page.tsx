@@ -271,33 +271,38 @@ export default function Dashboard() {
   // Component to show when no personalized trends are available yet
   const NoTrendsYet = ({ isXAuthorized }: { isXAuthorized: boolean }) => (
     <div className="bg-background/30 backdrop-blur-sm border border-primary/10 rounded-xl p-8 text-center my-4">
-      <TrendingUp className="w-12 h-12 text-primary mx-auto mb-3 opacity-50" />
-      <h3 className="text-lg font-semibold text-accent mb-2">No personalized trends yet</h3>
-      <p className="text-accent/70 mb-4 max-w-md mx-auto">
-        {isXAuthorized ? (
-          "X needs a little time to generate your personalized trends. Check back soon to see what's popular in your network!"
-        ) : (
-          "Posts created with AutonoBee consistently outperform industry averages"
-        )}
-      </p>
-      <div className="flex justify-center gap-4">
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-primary/20 text-primary rounded-md hover:bg-primary/30 transition-colors inline-flex items-center"
-        >
-          <Repeat className="w-4 h-4 mr-2" />
-          Refresh Data
-        </button>
-        {/* <a 
-          href="/api/auth/x/debug" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="px-4 py-2 bg-gray-500/20 text-gray-300 rounded-md hover:bg-gray-500/30 transition-colors inline-flex items-center"
-        >
-          <AlertTriangle className="w-4 h-4 mr-2" />
-          Check Auth Status
-        </a> */}
-      </div>
+      {isXAuthorized ? (
+        <>
+          <TrendingUp className="w-12 h-12 text-primary mx-auto mb-3 opacity-50" />
+          <h3 className="text-lg font-semibold text-accent mb-2">No personalized trends yet</h3>
+          <p className="text-accent/70 mb-4 max-w-md mx-auto">
+            X needs a little time to generate your personalized trends. Check back soon to see what's popular in your network!
+          </p>
+          <div className="flex justify-center gap-4">
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary/20 text-primary rounded-md hover:bg-primary/30 transition-colors inline-flex items-center"
+            >
+              <Repeat className="w-4 h-4 mr-2" />
+              Refresh Data
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <svg className="w-8 h-8 text-primary mx-auto mb-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <h3 className="text-lg font-semibold text-accent mb-2">Connect your X account</h3>
+          <p className="text-accent/80 mb-4">Get personalized trends and insights by connecting your X account</p>
+          <button 
+            onClick={authorizeX}
+            className="px-4 py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium"
+          >
+            Connect X Account
+          </button>
+        </>
+      )}
     </div>
   );
   

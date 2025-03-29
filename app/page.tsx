@@ -1,3 +1,5 @@
+"use client";
+
 import { Spotlight } from "@/components/ui/spotlight";
 import Link from "next/link";
 import { ExpandableCardDemo } from "@/components/expandable-card-demo-grid";
@@ -10,8 +12,98 @@ import { HoverGlowEffect } from "@/components/aceternity/hover-glow-effect";
 import { TextRevealCard } from "@/components/aceternity/text-reveal-card";
 import { CardContainer, CardBody, CardItem } from "@/components/aceternity/3d-card";
 import Layout from "@/components/Layout";
+import { useWallet } from '@/contexts/WalletContext';
+import { Sparkles } from "lucide-react";
 
 export default function Home() {
+  const { isConnected, connect, selectedPlan, selectPlan, hasBeeNFT, nftTier } = useWallet();
+
+  const renderedPricingPlans = pricingPlans.map((plan, index) => {
+    const isPlanSelected = selectedPlan === plan.name;
+    const isPlanActive = hasBeeNFT && 
+      ((nftTier === 'basic' && plan.name === 'Starter') || 
+       (nftTier === 'pro' && plan.name === 'Professional') ||
+       (nftTier === 'enterprise' && plan.name === 'Enterprise'));
+    
+    const canActivate = !plan.isComingSoon && !(hasBeeNFT && nftTier === 'pro' && plan.name === 'Starter');
+    
+    let buttonText = plan.buttonText;
+    if (isPlanActive) {
+      buttonText = "Active";
+    } else if (hasBeeNFT && nftTier === 'pro' && plan.name === 'Starter') {
+      buttonText = "Available";
+    }
+    
+    const handlePlanClick = () => {
+      if (plan.isComingSoon) return;
+      
+      if (hasBeeNFT) {
+        // If already has any NFT, redirect to mint page
+        window.location.href = '/mint';
+      } else if (!isConnected) {
+        // If not connected, connect wallet
+        connect();
+      } else {
+        // Select the plan and redirect to mint page
+        selectPlan(plan.name as 'Starter' | 'Professional' | 'Enterprise');
+        window.location.href = '/mint';
+      }
+    };
+    
+    return (
+      <div key={index} className="flex-1 max-w-sm mx-auto md:mx-0">
+        <div className={`pricing-card relative bg-background/30 backdrop-blur-sm p-6 rounded-xl border ${
+          isPlanActive ? 'border-primary' : 'border-accent/10'
+        } h-full flex flex-col min-h-[460px]`}>
+          {plan.isPopular && (
+            <div className="absolute -top-3 inset-x-0">
+              <div className="inline-block bg-primary text-background text-sm px-3 py-1 rounded-full font-medium">
+                Most Popular
+              </div>
+            </div>
+          )}
+          <div className="mb-4">
+            <h3 className="text-lg font-display text-primary mt-2">{plan.name}</h3>
+            <div className="flex items-baseline mt-2">
+              <span className="text-3xl font-bold text-accent">
+                {plan.name === 'Starter' ? '0.1 SOL' : plan.name === 'Professional' ? '0.5 SOL' : plan.price}
+              </span>
+              {plan.period && <span className="ml-1 text-sm text-accent/70">{plan.period}</span>}
+            </div>
+            <p className="mt-2 text-sm text-accent/80">{plan.description}</p>
+          </div>
+
+          <div className="flex-grow">
+            <ul className="space-y-3 mb-6">
+              {plan.features.map((feature, i) => (
+                <li key={i} className="flex items-start">
+                  <Sparkles className="h-5 w-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-accent/90">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <button
+            onClick={handlePlanClick}
+            className={`w-full py-2 rounded-md text-center font-medium ${
+              isPlanActive
+                ? 'bg-primary text-background'
+                : plan.isComingSoon
+                ? 'bg-accent/20 text-accent/70 cursor-not-allowed'
+                : !isConnected
+                ? 'bg-primary/80 text-background hover:bg-primary transition-colors'
+                : 'bg-primary/20 text-primary hover:bg-primary/30 transition-colors'
+            }`}
+            disabled={plan.isComingSoon}
+          >
+            {isPlanActive ? "Active" : plan.isComingSoon ? "Under Development" : !isConnected ? "Connect Wallet" : buttonText}
+          </button>
+        </div>
+      </div>
+    );
+  });
+
   return (
     <Layout>
     <div className="bg-background text-accent">
@@ -50,7 +142,7 @@ export default function Home() {
                 </p>
                 <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                   <Link 
-                    href="/dashboard" 
+                    href="/chat" 
                     className="w-full sm:w-auto bg-[#f9b72d] text-[#000000] font-medium px-6 py-3 rounded-md transition-transform hover:scale-105 active:scale-95 whitespace-nowrap"
                   >
                     Take Your Journey Today
@@ -280,43 +372,17 @@ export default function Home() {
       </section>
       
       {/* Pricing Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-display mb-6">
+      <section id="pricing" className="py-20 relative overflow-hidden">
+        <div className="container px-4 mx-auto relative z-10">
+          <div className="text-center mb-12">
             <AnimatedGradientText text="Pricing Plans for Every Need" />
-          </h2>
-          <p className="text-lg text-accent/80 max-w-2xl mx-auto mb-12 animate-reveal">
-            Choose the plan that best fits your content creation requirements. Scale up as your needs grow.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
-              <HoverGlowEffect key={index} containerClassName={plan.isPopular ? "transform -translate-y-4" : ""}>
-                <div className="pricing-card relative bg-background/30 backdrop-blur-sm p-6 rounded-xl border border-accent/10 h-full flex flex-col min-h-[460px]">
-                  {plan.isPopular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-background px-4 py-1 rounded-full text-sm font-medium">
-                      Most Popular
-                    </div>
-                  )}
-                  <h3 className="text-2xl font-display mb-2">{plan.name}</h3>
-                  <div className="flex items-baseline justify-center mb-4">
-                    <span className="text-3xl font-display text-primary">{plan.price}</span>
-                    <span className="text-accent/70 ml-1">{plan.period}</span>
-                  </div>
-                  <p className="text-accent/80 text-sm mb-6">{plan.description}</p>
-                  <ul className="space-y-3 mb-6 text-left flex-grow">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center min-h-[24px]">
-                        {feature.trim() && <span className="text-primary mr-2">✓</span>}
-                        <span className="text-accent/80 text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="w-full py-3 px-4 rounded-md bg-[#f9b72d] text-[#000000] hover:bg-[#f9b72d]/90 transition-colors font-medium mt-auto">
-                    {plan.buttonText}
-                  </button>
-                </div>
-              </HoverGlowEffect>
-            ))}
+            <p className="mt-4 text-accent/80 max-w-2xl mx-auto">
+              Purchase an NFT subscription to unlock premium features. Your NFT grants permanent access to the corresponding tier's benefits.
+            </p>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-8 justify-center items-stretch">
+            {renderedPricingPlans}
           </div>
         </div>
       </section>
@@ -424,7 +490,7 @@ export default function Home() {
             </div>
             
             <Link 
-              href="/sign-up" 
+              href="/chat" 
               className="px-8 py-4 bg-[#f9b72d] text-[#000000] rounded-md hover:bg-[#f9b72d]/90 transition-colors font-medium text-lg inline-block"
             >
               Get Started Today
@@ -461,8 +527,8 @@ const testimonials = [
 const pricingPlans = [
   {
     name: "Starter",
-    price: "FREE",
-    period: "enjoy",
+    price: "0.1 SOL",
+    period: "one-time",
     description: "Perfect for creators just beginning their journey",
     features: [
       "500 AI-powered posts per month",
@@ -471,13 +537,14 @@ const pricingPlans = [
       "Post scheduling (up to 7 days)",
       "Real-time engagement analytics"
     ],
-    buttonText: "Activated",
-    isPopular: false
+    buttonText: "Get Started",
+    isPopular: false,
+    isComingSoon: false
   },
   {
     name: "Professional",
-    price: "FREE",
-    period: "enjoy",
+    price: "0.5 SOL",
+    period: "one-time",
     description: "Elevate your social presence to the next level",
     features: [
       "Unlimited AI-powered content creation",
@@ -487,8 +554,9 @@ const pricingPlans = [
       "Engagement-optimized posting times",
       "Trend prediction & content suggestions"
     ],
-    buttonText: "Activated",
-    isPopular: true
+    buttonText: "Upgrade Now",
+    isPopular: true,
+    isComingSoon: false
   },
   {
     name: "Enterprise",
@@ -503,7 +571,8 @@ const pricingPlans = [
       "Advanced ROI & conversion tracking",
       "Dedicated success manager"
     ],
-    buttonText: "Under development",
-    isPopular: false
+    buttonText: "Under Development",
+    isPopular: false,
+    isComingSoon: true
   }
 ];

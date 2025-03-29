@@ -47,6 +47,10 @@
     --sidebar-accent-foreground: 0 0% 0%;
     --sidebar-border: 0 0% 11%;
     --sidebar-ring: 40 95% 58%;
+    --foreground-rgb: 255, 255, 255;
+    --background-rgb: 15, 15, 15;
+    --accent-rgb: 229, 229, 229;
+    --primary-rgb: 249, 183, 45;
   }
 
   * {
@@ -56,6 +60,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    color: rgb(var(--foreground-rgb));
+    background: rgb(var(--background-rgb));
   }
 
   html {
@@ -344,4 +350,74 @@
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient 3s ease-in-out infinite;
+}
+
+/* Animation keyframes */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Custom animations */
+.animate-fade-in-down {
+  animation: fadeInDown 0.5s ease-out;
+}
+
+.animate-pulse-custom {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--primary-rgb), 0.1) 0%,
+    rgba(var(--primary-rgb), 0.2) 25%,
+    rgba(var(--primary-rgb), 0.1) 50%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Loading skeleton placeholders */
+.skeleton-loader {
+  display: block;
+  width: 100%;
+  height: 24px;
+  border-radius: 0.25rem;
+  background: linear-gradient(
+    90deg,
+    rgba(var(--accent-rgb), 0.05) 0%,
+    rgba(var(--accent-rgb), 0.1) 50%,
+    rgba(var(--accent-rgb), 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-loader.sm {
+  height: 16px;
 }

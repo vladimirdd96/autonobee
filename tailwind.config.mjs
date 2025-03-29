@@ -97,6 +97,32 @@ const config = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
         },
+        "fade-in-down": {
+          from: {
+            opacity: 0,
+            transform: "translateY(-20px)",
+          },
+          to: {
+            opacity: 1,
+            transform: "translateY(0)",
+          },
+        },
+        "pulse-custom": {
+          "0%, 100%": {
+            opacity: 1,
+          },
+          "50%": {
+            opacity: 0.5,
+          },
+        },
+        "shimmer-custom": {
+          "0%": {
+            backgroundPosition: "-200% 0",
+          },
+          "100%": {
+            backgroundPosition: "200% 0",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -105,6 +131,9 @@ const config = {
         spotlight: "spotlight 2s ease .75s 1 forwards",
         shimmer: "shimmer 2s linear infinite",
         float: "float 3s ease-in-out infinite",
+        "fade-in-down": "fade-in-down 0.5s ease-out",
+        "pulse-custom": "pulse-custom 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "shimmer-custom": "shimmer-custom 2s infinite",
       },
       perspective: {
         1000: "1000px",

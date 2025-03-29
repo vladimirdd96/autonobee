@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Open_Sans, Koulen } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WalletProvider } from "@/contexts/WalletContext";
 
@@ -39,9 +38,7 @@ export default function RootLayout({
         <AuthProvider>
           <WalletProvider>
             <div className="relative z-10">
-              <Navbar />
               {children}
-              <Footer />
             </div>
           </WalletProvider>
         </AuthProvider>

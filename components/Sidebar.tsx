@@ -13,8 +13,13 @@ import {
   Users,
   Sparkles,
   Menu,
-  X
+  X,
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
+import { useWallet } from '@/contexts/WalletContext';
+import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,6 +28,22 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
   const pathname = usePathname();
+  const { 
+    isConnected, 
+    hasBeeNFT, 
+    selectedPlan, 
+    nftTier,
+    isConnecting, 
+    checkNFT,
+    isNFTStatusLoading
+  } = useWallet();
+
+  // Check NFT status when sidebar opens
+  useEffect(() => {
+    if (isOpen && isConnected) {
+      checkNFT();
+    }
+  }, [isOpen, isConnected, checkNFT]);
 
   const navItems = [
     { name: 'Home', path: '/', icon: LayoutDashboard },
@@ -65,7 +86,7 @@ export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         w-64 pt-16
       `}>
-        <div className="px-4 py-6 overflow-y-auto h-full">
+        <div className="px-4 py-6 overflow-y-auto h-full flex flex-col">
           <nav className="space-y-2">
             {navItems.map((item) => (
               <Link 
@@ -87,20 +108,43 @@ export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
               </Link>
             ))}
           </nav>
-          <div className="absolute bottom-6 left-0 w-full px-4">
-            <div className="p-4 rounded-lg bg-primary/10">
-              <h3 className="text-primary font-display mb-2 flex items-center">
-                <Sparkles className="mr-2 h-5 w-5 text-primary" />
-                AutonoBee Pro
-              </h3>
-              <p className="text-sm text-accent/80 mb-3">
-                Professional Features are active for all users until 31st of April 2025
-              </p>
-              <div className="w-full py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors flex justify-center items-center">
-                Activated
+          
+          <div className="flex-1"></div>
+          
+          {/* Subscription section - moved to bottom */}
+          {isConnected ? (
+            <div className="mt-auto pt-4 bg-accent/5 rounded-lg border border-accent/10">
+              <div className="flex items-center mb-2 px-4">
+                <Sparkles className="h-5 w-5 text-primary mr-2" />
+                <h3 className="font-medium text-primary">Subscription</h3>
+              </div>
+              
+              {isConnecting || isNFTStatusLoading ? (
+                <div className="mb-3 px-4 py-2 flex flex-col items-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                    <span className="text-sm text-accent">Checking status...</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-3 text-sm text-accent/80 px-4">
+                  {hasBeeNFT 
+                    ? `Your ${nftTier ? nftTier.charAt(0).toUpperCase() + nftTier.slice(1) : 'Basic'} plan is currently active.` 
+                    : 'No active subscription plan.'}
+                </div>
+              )}
+              
+              <div className="px-4 pb-4">
+                <Link
+                  href="/mint"
+                  className="flex items-center justify-between w-full py-2 px-3 text-xs font-medium rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  <span>{hasBeeNFT ? 'Manage Subscription' : 'Get Started'}</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </aside>
     </>
