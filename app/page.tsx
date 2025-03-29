@@ -14,6 +14,7 @@ import { CardContainer, CardBody, CardItem } from "@/components/aceternity/3d-ca
 import Layout from "@/components/Layout";
 import { useWallet } from '@/contexts/WalletContext';
 import { Sparkles } from "lucide-react";
+import { teamMembers } from "@/utils/team-members";
 
 export default function Home() {
   const { isConnected, connect, selectedPlan, selectPlan, hasBeeNFT, nftTier } = useWallet();
@@ -114,7 +115,7 @@ export default function Home() {
         secondaryColor="hsl(0, 0%, 80%)"
         className="relative z-0"
       >
-        <section className="pt-20 pb-16 md:pt-40 md:pb-32 relative">
+        <section className="pt-20 pb-16 md:pb-32 relative">
           <MeteorEffect count={25} color="#f9b72d" className="z-0" />
           <div className="container mx-auto px-4 relative">
             <div className="flex flex-col md:flex-row items-center justify-between">
@@ -151,18 +152,21 @@ export default function Home() {
               </div>
               <div className="w-full md:w-1/2 relative">
                 <div className="w-full relative px-4 md:px-0">
-                  <div className="relative aspect-square md:aspect-[4/3] lg:aspect-[3/2] max-w-[600px] mx-auto">
-                    <Image
-                      src="/images/hero-banner.png"
-                      alt="Friendly cartoon bees illustration"
-                      fill
-                      priority
-                      className="object-contain hover:scale-105 transition-transform duration-300"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
-                      quality={90}
-                      unoptimized
-                    />
+                  <div className="relative aspect-square md:aspect-[4/3] lg:aspect-[3/2] max-w-[600px] mx-auto flex items-center justify-center">
+                    <div className="relative w-[200%] h-[200%]">
+                      <Image
+                        src="/images/hero-banner.png"
+                        alt="Friendly cartoon bees illustration"
+                        fill
+                        priority
+                        className="object-contain animate-bee-float scale-[5] bee-glow"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
+                        quality={100}
+                        unoptimized
+                      />
+                    </div>
                   </div>
+                  
                   {/* Decorative elements */}
                   <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full">
                     <div className="absolute w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -185,59 +189,53 @@ export default function Home() {
         </div>
       </section>
       
-      {/* Content Brilliance Section */}
+      {/* AI Agents Section */}
       <section className="py-16 bg-primary/5 relative">
         <MeteorEffect count={10} color="#f9b72d" className="z-0" />
         <div className="container mx-auto px-4 text-center relative z-10">
-          <Link href="/dashboard">
-            <TextRevealCard
-              text="Discover AI-Powered Content Brilliance"
-              revealText="The Future of Content Creation Is Here"
-              className="mx-auto max-w-4xl text-3xl md:text-4xl font-display"
-              revealClassName="text-primary"
+          <h2 className="text-3xl md:text-4xl font-display mb-12 text-center">
+            <AnimatedGradientText text="Meet Our AI Agents" />
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {teamMembers.map((member, index) => (
+              <div 
+                key={index}
+                className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 hover:border-primary/30 transition-colors cursor-pointer hover:shadow-md hover:shadow-primary/10 group"
+                onClick={() => {
+                  window.location.href = `/team?agent=${encodeURIComponent(member.name)}`;
+                }}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-primary/20 group-hover:border-primary/40 transition-colors">
+                    <img 
+                      src={member.image} 
+                      alt={member.name}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-accent mb-1 group-hover:text-primary transition-colors">{member.name}</h3>
+                  <p className="text-primary mb-3">{member.role}</p>
+                  <p className="text-accent/80 mb-4">{member.bio}</p>
+                  <span className="text-xs text-primary/60 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">Click for details</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-12">
+            <Link 
+              href="/team" 
+              className="px-6 py-3 bg-primary/20 text-primary rounded-md hover:bg-primary/30 transition-colors inline-flex items-center group"
             >
-              <p className="text-lg text-accent/80 max-w-2xl mx-auto mt-8">
-                Transform the future of your writing. Tap into the unparalleled precision of AI to create content that resonates with your audience, connects with readers, inspires your journey towards remarkable content.
-              </p>
-            </TextRevealCard>
-          </Link>
-          
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <HoverGlowEffect>
-              <CardContainer className="aspect-[16/9]">
-                <CardBody className="h-full w-full bg-transparent">
-                  <CardItem translateZ={50} className="w-full h-full rounded-xl overflow-hidden">
-                    <div className="relative w-full h-full">
-                      <Image 
-                        src="/images/ai-writing.jpg" 
-                        alt="AI Writing" 
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </div>
-                  </CardItem>
-                </CardBody>
-              </CardContainer>
-            </HoverGlowEffect>
-            
-            <HoverGlowEffect>
-              <CardContainer className="aspect-[16/9]">
-                <CardBody className="h-full w-full bg-transparent">
-                  <CardItem translateZ={50} className="w-full h-full rounded-xl overflow-hidden">
-                    <div className="relative w-full h-full">
-                      <Image 
-                        src="/images/futuristic-tech.jpg" 
-                        alt="Futuristic Technology" 
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </div>
-                  </CardItem>
-                </CardBody>
-              </CardContainer>
-            </HoverGlowEffect>
+              <span>Learn more about our AI agents</span>
+              <svg 
+                className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         </div>
       </section>

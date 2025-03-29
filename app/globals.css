@@ -91,6 +91,11 @@
     transition: opacity 0.3s ease;
   }
 
+  .bee-glow {
+    filter: drop-shadow(0 0 8px rgba(249, 183, 45, 0.4));
+    animation: bee-glow-pulse 4s ease-in-out infinite alternate;
+  }
+
   .feature-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 30px -10px rgba(249, 183, 45, 0.1);
@@ -420,4 +425,16 @@
 
 .skeleton-loader.sm {
   height: 16px;
+}
+
+@keyframes bee-glow-pulse {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(249, 183, 45, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(249, 183, 45, 0.6));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px rgba(249, 183, 45, 0.3));
+  }
 }

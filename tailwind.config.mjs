@@ -94,8 +94,19 @@ const config = {
           to: { backgroundPosition: "-200% 0" },
         },
         float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
+          "0%, 100%": { transform: "translateY(0) translateX(0) rotate(0deg)" },
+          "25%": { transform: "translateY(-5px) translateX(5px) rotate(2deg)" },
+          "50%": { transform: "translateY(-10px) translateX(0) rotate(0deg)" },
+          "75%": { transform: "translateY(-5px) translateX(-5px) rotate(-2deg)" },
+        },
+        "bee-float": {
+          "0%": { transform: "translateY(0) translateX(0) rotate(0deg)" },
+          "10%": { transform: "translateY(-20px) translateX(15px) rotate(4deg)" },
+          "30%": { transform: "translateY(-35px) translateX(20px) rotate(7deg)" },
+          "50%": { transform: "translateY(-20px) translateX(0) rotate(0deg)" },
+          "70%": { transform: "translateY(-35px) translateX(-20px) rotate(-7deg)" },
+          "90%": { transform: "translateY(-20px) translateX(-15px) rotate(-4deg)" },
+          "100%": { transform: "translateY(0) translateX(0) rotate(0deg)" },
         },
         "fade-in-down": {
           from: {
@@ -130,7 +141,8 @@ const config = {
         "meteor-effect": "meteor 5s linear infinite",
         spotlight: "spotlight 2s ease .75s 1 forwards",
         shimmer: "shimmer 2s linear infinite",
-        float: "float 3s ease-in-out infinite",
+        float: "float 6s ease-in-out infinite",
+        "bee-float": "bee-float 8s ease-in-out infinite",
         "fade-in-down": "fade-in-down 0.5s ease-out",
         "pulse-custom": "pulse-custom 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "shimmer-custom": "shimmer-custom 2s infinite",

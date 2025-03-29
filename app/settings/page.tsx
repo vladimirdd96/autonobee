@@ -26,6 +26,7 @@ export default function Settings() {
   const [isCheckingNFT, setIsCheckingNFT] = useState(false);
   const [showRefreshBanner, setShowRefreshBanner] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [xConnected, setXConnected] = useState(false);
 
   // Function to force refresh NFT status
   const refreshNFTStatus = async () => {
@@ -57,6 +58,30 @@ export default function Settings() {
       setInitialLoading(false);
     }
   }, [isConnected, publicKey, checkNFT]);
+
+  // Check X auth status when component mounts and after any logout
+  useEffect(() => {
+    const checkXStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/x/check');
+        const data = await response.json();
+        setXConnected(data.authorized);
+      } catch (error) {
+        console.error('Error checking X status:', error);
+        setXConnected(false);
+      }
+    };
+    
+    checkXStatus();
+  }, []);
+  
+  const handleDisconnectX = async () => {
+    await logoutX();
+    // Re-check the status after logout
+    const response = await fetch('/api/auth/x/check');
+    const data = await response.json();
+    setXConnected(data.authorized);
+  };
 
   return (
     <Layout>
@@ -101,14 +126,23 @@ export default function Settings() {
                   <svg className="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
-                  <span className="text-accent">Connected</span>
+                  <span className="text-accent">{xConnected ? 'Connected' : 'Not Connected'}</span>
                 </div>
-                <button
-                  onClick={logoutX}
-                  className="px-4 py-2 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors font-medium"
-                >
-                  Disconnect
-                </button>
+                {xConnected ? (
+                  <button
+                    onClick={handleDisconnectX}
+                    className="px-4 py-2 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors font-medium"
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <button
+                    onClick={authorizeX}
+                    className="px-4 py-2 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors font-medium"
+                  >
+                    Connect
+                  </button>
+                )}
               </div>
             </div>
             
