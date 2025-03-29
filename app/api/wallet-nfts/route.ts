@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fetchWalletNFTs } from '@/utils/metaplex';
 
+// Tell Next.js this is a dynamic API route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // Get wallet address from query params

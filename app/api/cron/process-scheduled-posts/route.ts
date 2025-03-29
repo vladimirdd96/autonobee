@@ -10,7 +10,7 @@ interface ScheduledPost {
   error?: string;
 }
 
-// This endpoint will be called by a cron job every minute
+// This endpoint will be called by a cron job once per day
 export async function GET(req: Request) {
   try {
     // Check if KV environment variables are available
@@ -23,8 +23,18 @@ export async function GET(req: Request) {
       });
     }
 
-    // Get all users' scheduled posts lists
-    const userKeys = await kv.keys('user:*:scheduled_posts');
+    // Safely try to get all users' scheduled posts lists
+    let userKeys: string[] = [];
+    try {
+      userKeys = await kv.keys('user:*:scheduled_posts');
+    } catch (error) {
+      console.error('Error connecting to KV store:', error);
+      return NextResponse.json({ 
+        success: true,
+        message: 'Unable to connect to KV store - unable to process scheduled posts',
+        processedPosts: 0
+      });
+    }
     
     // If no scheduled posts found, return early
     if (!userKeys || userKeys.length === 0) {
@@ -37,24 +47,41 @@ export async function GET(req: Request) {
     
     const now = new Date();
     let processedCount = 0;
+    let pendingFutureCount = 0;
 
     for (const userKey of userKeys) {
-      // Get all scheduled post IDs for this user
-      const scheduledPostIds = await kv.lrange(userKey, 0, -1);
+      // Safely get all scheduled post IDs for this user
+      let scheduledPostIds: string[] = [];
+      try {
+        scheduledPostIds = await kv.lrange(userKey, 0, -1);
+      } catch (error) {
+        console.error(`Error fetching scheduled posts for user key ${userKey}:`, error);
+        continue;
+      }
       
       for (const postId of scheduledPostIds) {
-        // Get the scheduled post data
-        const post = await kv.get<ScheduledPost>(postId);
+        // Safely get the scheduled post data
+        let post: ScheduledPost | null = null;
+        try {
+          post = await kv.get<ScheduledPost>(postId);
+        } catch (error) {
+          console.error(`Error fetching post with ID ${postId}:`, error);
+          continue;
+        }
         
         if (!post) continue;
         
         const scheduledTime = new Date(post.scheduledTime);
         
-        // Check if it's time to post
+        // Check if it's time to post (due now or overdue)
         if (scheduledTime <= now && post.status === 'pending') {
           try {
             // Post to X
-            const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/post-to-x`, {
+            const postUrl = process.env.NEXT_PUBLIC_APP_URL 
+              ? `${process.env.NEXT_PUBLIC_APP_URL}/api/post-to-x` 
+              : '/api/post-to-x';
+
+            const response = await fetch(postUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -62,6 +89,7 @@ export async function GET(req: Request) {
               body: JSON.stringify({
                 content: post.content,
                 mediaId: post.mediaId,
+                userId: post.userId
               }),
             });
 
@@ -85,14 +113,20 @@ export async function GET(req: Request) {
               await kv.set(postId, { ...post, status: 'failed', error: 'Unknown error occurred' });
             }
           }
+        } else if (scheduledTime > now && post.status === 'pending') {
+          // Count posts that are scheduled for the future
+          pendingFutureCount++;
         }
       }
     }
 
     return NextResponse.json({ 
       success: true,
-      message: processedCount > 0 ? `Processed ${processedCount} posts` : 'No posts needed processing',
-      processedPosts: processedCount
+      message: processedCount > 0 
+        ? `Processed ${processedCount} posts. ${pendingFutureCount} posts still pending for future publishing.` 
+        : `No posts needed processing. ${pendingFutureCount} posts still pending for future publishing.`,
+      processedPosts: processedCount,
+      pendingFuturePosts: pendingFutureCount
     });
   } catch (error) {
     console.error('Error processing scheduled posts:', error);

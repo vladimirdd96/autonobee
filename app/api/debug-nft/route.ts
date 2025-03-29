@@ -4,11 +4,14 @@ import { Metaplex, Nft, Sft, Metadata } from '@metaplex-foundation/js';
 
 const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('devnet');
 
+// Tell Next.js this is a dynamic API route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
-    // Get wallet from query params
-    const url = new URL(request.url);
-    const wallet = url.searchParams.get('wallet');
+    // Get wallet from query params using NextRequest
+    const { searchParams } = new URL(request.url);
+    const wallet = searchParams.get('wallet');
     
     if (!wallet) {
       return NextResponse.json({
