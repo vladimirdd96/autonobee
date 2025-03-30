@@ -40,6 +40,7 @@ import {
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useXData } from '@/lib/hooks/useXData';
+import { useWallet } from '@/contexts/WalletContext';
 
 // Types based on X API documentation
 interface TrendData {
@@ -80,6 +81,7 @@ interface PublicTrendData {
 export default function Dashboard() {
   // Authentication state
   const { isXAuthorized, authorizeX, xUser, isLoading: isAuthLoading } = useAuth();
+  const { isConnected, hasBeeNFT, nftTier } = useWallet();
   
   // Use React Query for public trends
   const { 
@@ -255,8 +257,11 @@ export default function Dashboard() {
           <p className="text-accent/80 mb-4">Get personalized trends and insights by connecting your X account</p>
           <button 
             onClick={authorizeX}
-            className="px-4 py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium"
+            className="px-4 py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium inline-flex items-center"
           >
+            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
             Connect X Account
           </button>
         </>
@@ -281,10 +286,6 @@ export default function Dashboard() {
             
             {/* Wallet Status */}
             <div className="flex flex-wrap items-center gap-2 md:gap-4">
-              <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-primary/10 border border-primary/20">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span className="text-sm text-accent">Connected</span>
-              </div>
               {isXAuthorized ? (
                 <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-primary/10 border border-primary/20">
                   <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
@@ -305,7 +306,13 @@ export default function Dashboard() {
               )}
               <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-primary/10 border border-primary/20">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-sm text-accent">Pro Active</span>
+                <span className="text-sm text-accent">
+                  {!isConnected ? 'Free' : 
+                   !hasBeeNFT ? 'Free' :
+                   nftTier === 'basic' ? 'Basic Active' :
+                   nftTier === 'pro' ? 'Pro Active' :
+                   nftTier === 'enterprise' ? 'Enterprise Active' : 'Free'}
+                </span>
               </div>
             </div>
           </div>
@@ -356,8 +363,11 @@ export default function Dashboard() {
                 <p className="text-accent/80 mb-4">Get personalized trends and insights by connecting your X account</p>
                 <button 
                   onClick={authorizeX}
-                  className="px-4 py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium"
+                  className="px-4 py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium inline-flex items-center"
                 >
+                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
                   Connect X Account
                 </button>
               </div>
@@ -547,68 +557,70 @@ export default function Dashboard() {
           </div>
 
           {/* X.com Authentication Status */}
-          <div className="mb-8 bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-            <h2 className="text-xl text-yellow-500 font-semibold mb-4">X.com Integration</h2>
+          <div className="mb-8">
+            <h2 className="text-lg font-bold text-accent flex justify-between items-center mb-4">
+              <span className="text-accent">X.com Integration</span>
+            </h2>
             
             {isAuthLoading ? (
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="w-6 h-6 text-yellow-500 animate-spin mr-2" />
-                <span className="text-gray-400">Checking X.com connection...</span>
+              <div className="bg-background/30 backdrop-blur-sm border border-primary/10 rounded-xl p-6 text-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-2" />
+                <span className="text-accent">Checking X.com connection...</span>
               </div>
             ) : isXAuthorized ? (
-              <div>
-                <div className="flex items-center mb-4">
+              <div className="bg-background/30 backdrop-blur-sm border border-primary/10 rounded-xl p-6">
+                <div className="flex items-center justify-center mb-4">
                   <div className="bg-green-500 w-3 h-3 rounded-full mr-2"></div>
-                  <span className="text-green-400">Connected to X.com</span>
+                  <span className="text-accent">Connected to X.com</span>
                 </div>
                 
                 {xUser && (
-                  <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 mb-4">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mr-4">
-                        <span className="text-xl font-bold text-yellow-500">
+                  <div className="bg-background/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10 mb-4">
+                    <div className="flex items-center justify-center">
+                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mr-4">
+                        <span className="text-xl font-bold text-primary">
                           {xUser.name?.[0] || '?'}
                         </span>
                       </div>
                       
                       <div>
-                        <h3 className="font-semibold text-white">{xUser.name}</h3>
-                        <p className="text-gray-400">@{xUser.username}</p>
+                        <h3 className="font-semibold text-accent">{xUser.name}</h3>
+                        <p className="text-accent/60">@{xUser.username}</p>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                <div className="flex space-x-4">
+                <div className="flex justify-center space-x-4">
                   <Link 
                     href="/profile" 
-                    className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition"
+                    className="px-4 py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium"
                   >
                     View Profile Analytics
                   </Link>
                   
                   <Link 
                     href="/search" 
-                    className="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition"
+                    className="px-4 py-2 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors font-medium"
                   >
                     Search X Users
                   </Link>
                 </div>
               </div>
             ) : (
-              <div>
-                <div className="flex items-center mb-4">
+              <div className="bg-background/30 backdrop-blur-sm border border-primary/10 rounded-xl p-6 text-center">
+                <div className="flex items-center justify-center mb-4">
                   <div className="bg-red-500 w-3 h-3 rounded-full mr-2"></div>
-                  <span className="text-red-400">Not connected to X.com</span>
+                  <span className="text-accent/80">Not connected to X.com</span>
                 </div>
                 
-                <p className="text-gray-400 mb-4">
+                <p className="text-accent/60 mb-4">
                   Connect your X account to access trends, analytics, and search functionality.
                 </p>
                 
                 <button 
                   onClick={authorizeX}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition inline-flex items-center"
+                  className="px-4 py-2 bg-primary text-background rounded-md hover:bg-primary/90 transition-colors font-medium inline-flex items-center"
                 >
                   <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -621,87 +633,92 @@ export default function Dashboard() {
           
           {/* X Profile Analytics */}
           {xAuth.isAuthenticated && profileAnalyticsData && (
-            <div className="mb-8 bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-              <h2 className="text-xl text-yellow-500 font-semibold mb-4">Your X Profile Stats</h2>
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-accent flex justify-between items-center mb-4">
+                <span className="text-accent">X Profile Stats</span>
+              </h2>
               
-              {isProfileAnalyticsLoading ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="h-24 bg-gray-700 rounded"></div>
-                    ))}
+              <div className="bg-background/30 backdrop-blur-sm border border-primary/10 rounded-xl p-6">
+                {isProfileAnalyticsLoading ? (
+                  <div className="animate-pulse space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-24 bg-background/40 rounded-lg border border-primary/10"></div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : profileAnalyticsError ? (
-                <div className="bg-red-900/30 border border-red-700 p-4 rounded-md text-red-300">
-                  <div className="flex items-center mb-2">
-                    <AlertCircle className="w-5 h-5 mr-2" />
-                    <span className="font-semibold">Error loading analytics</span>
+                ) : profileAnalyticsError ? (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      <AlertCircle className="w-6 h-6 text-red-500 mr-2" />
+                      <span className="font-semibold text-accent">Error loading analytics</span>
+                    </div>
+                    <p className="text-accent/80 mb-4">{profileAnalyticsError instanceof Error ? profileAnalyticsError.message : 'Something went wrong'}</p>
+                    <button 
+                      onClick={() => refetchProfileAnalytics()}
+                      className="px-4 py-2 bg-primary/20 text-primary rounded-md hover:bg-primary/30 transition-colors inline-flex items-center"
+                    >
+                      <Repeat className="w-4 h-4 mr-2" />
+                      Retry
+                    </button>
                   </div>
-                  <p className="text-sm">{profileAnalyticsError instanceof Error ? profileAnalyticsError.message : 'Something went wrong'}</p>
-                  <button 
-                    onClick={() => refetchProfileAnalytics()}
-                    className="mt-3 bg-red-700/50 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors"
-                  >
-                    Retry
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  {/* Profile Stats Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                      <div className="text-gray-400 text-sm mb-1">Followers</div>
-                      <div className="text-xl font-bold text-white">
-                        {profileAnalyticsData.metrics?.followers.toLocaleString()}
+                ) : (
+                  <div>
+                    {/* Profile Stats Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-background/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10">
+                        <div className="text-accent/60 text-sm mb-1">Followers</div>
+                        <div className="text-xl font-bold text-primary">
+                          {profileAnalyticsData.metrics?.followers.toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-background/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10">
+                        <div className="text-accent/60 text-sm mb-1">Following</div>
+                        <div className="text-xl font-bold text-primary">
+                          {profileAnalyticsData.metrics?.following.toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-background/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10">
+                        <div className="text-accent/60 text-sm mb-1">Total Posts</div>
+                        <div className="text-xl font-bold text-primary">
+                          {profileAnalyticsData.metrics?.tweets.toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-background/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10">
+                        <div className="text-accent/60 text-sm mb-1">Engagement Rate</div>
+                        <div className="text-xl font-bold text-primary">
+                          {profileAnalyticsData.engagement?.rate}%
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                      <div className="text-gray-400 text-sm mb-1">Following</div>
-                      <div className="text-xl font-bold text-white">
-                        {profileAnalyticsData.metrics?.following.toLocaleString()}
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                      <div className="text-gray-400 text-sm mb-1">Total Posts</div>
-                      <div className="text-xl font-bold text-white">
-                        {profileAnalyticsData.metrics?.tweets.toLocaleString()}
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                      <div className="text-gray-400 text-sm mb-1">Engagement Rate</div>
-                      <div className="text-xl font-bold text-white">
-                        {profileAnalyticsData.engagement?.rate}%
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Recent Posts */}
-                  {profileAnalyticsData.recentTweets?.length > 0 && (
-                    <div>
-                      <h3 className="text-lg text-white font-semibold mb-3">Recent Posts</h3>
-                      <div className="space-y-3">
-                        {profileAnalyticsData.recentTweets.slice(0, 2).map((tweet: any, idx: number) => (
-                          <div key={idx} className="bg-gray-900/30 p-3 rounded border border-gray-800">
-                            <p className="text-gray-300 text-sm line-clamp-2 mb-2">{tweet.text}</p>
-                            <div className="flex justify-between text-xs text-gray-400">
-                              <div className="flex space-x-3">
-                                <span>❤️ {tweet.metrics.like_count}</span>
-                                <span>🔄 {tweet.metrics.retweet_count}</span>
-                                <span>💬 {tweet.metrics.reply_count}</span>
+                    {/* Recent Posts */}
+                    {profileAnalyticsData.recentTweets?.length > 0 && (
+                      <div>
+                        <h3 className="text-lg text-accent font-semibold mb-3">Recent Posts</h3>
+                        <div className="space-y-3">
+                          {profileAnalyticsData.recentTweets.slice(0, 2).map((tweet: any, idx: number) => (
+                            <div key={idx} className="bg-background/40 backdrop-blur-sm p-4 rounded-lg border border-primary/10">
+                              <p className="text-accent text-sm line-clamp-2 mb-2">{tweet.text}</p>
+                              <div className="flex justify-between text-xs text-accent/60">
+                                <div className="flex space-x-3">
+                                  <span>❤️ {tweet.metrics.like_count}</span>
+                                  <span>🔄 {tweet.metrics.retweet_count}</span>
+                                  <span>💬 {tweet.metrics.reply_count}</span>
+                                </div>
+                                <div>{new Date(tweet.created_at).toLocaleDateString()}</div>
                               </div>
-                              <div>{new Date(tweet.created_at).toLocaleDateString()}</div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

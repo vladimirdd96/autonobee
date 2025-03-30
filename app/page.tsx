@@ -488,7 +488,7 @@ export default function Home() {
             </div>
             
             <Link 
-              href="/chat" 
+              href="/dashboard" 
               className="px-8 py-4 bg-[#f9b72d] text-[#000000] rounded-md hover:bg-[#f9b72d]/90 transition-colors font-medium text-lg inline-block"
             >
               Get Started Today
