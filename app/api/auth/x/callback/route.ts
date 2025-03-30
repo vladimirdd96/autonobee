@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     xApiAuth.storeUserTokens(userId, tokenData);
 
     // Store the tokens and user data in cookies
-    const response = NextResponse.redirect(`${baseUrl}/dashboard?x_auth_success=true`);
+    const response = NextResponse.redirect(`${baseUrl}/dashboard?x_auth_success=true&auth_method=oauth2`);
     
     response.cookies.set('x_access_token', tokenData.access_token, {
       httpOnly: true,
@@ -79,12 +79,28 @@ export async function GET(request: Request) {
       maxAge: 60 * 60 * 24 * 7, // 1 week
     });
 
-    // Store user ID for later reference
+    // Store user ID and auth flag for later reference
     response.cookies.set('x_user_id', userId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+    
+    // Set auth method to indicate OAuth 2.0
+    response.cookies.set('x_auth_method', 'oauth2', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+    
+    // Set auth flag to true
+    response.cookies.set('x_auth', 'true', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
     });
 
     return response;

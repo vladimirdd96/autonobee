@@ -84,6 +84,14 @@ export async function GET(request: Request) {
         maxAge: 60 * 60 * 24 * 7, // 1 week
       });
       
+      // Set auth flag to true
+      response.cookies.set('x_auth', 'true', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+      });
+      
       return response;
     } catch (error: any) {
       console.error('OAuth 1.0a authentication error:', error);

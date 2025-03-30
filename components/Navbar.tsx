@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from './Logo';
 import { MovingBorder } from './aceternity/moving-border';
-import { Menu, X, ChevronDown, ChevronUp, LayoutDashboard, FileEdit, MessageSquare, BarChart2, TrendingUp, Users, Settings, LogOut, Loader2 } from 'lucide-react';
+import { Menu, X, ChevronDown, ChevronUp, LayoutDashboard, FileEdit, MessageSquare, BarChart2, TrendingUp, Users, Settings, LogOut, Loader2, RefreshCw, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWallet } from '@/contexts/WalletContext';
@@ -32,6 +32,8 @@ const dashboardItems = [
   { name: 'Chat', path: '/chat', icon: MessageSquare },
   { name: 'Analytics', path: '/analytics', icon: BarChart2 },
   { name: 'Trends', path: '/trends', icon: TrendingUp },
+  { name: 'Timeline', path: '/timeline', icon: RefreshCw },
+  { name: 'Search X', path: '/search', icon: Users },
   { name: 'Team', path: '/team', icon: Users },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
@@ -113,6 +115,78 @@ export default function Navbar() {
             }`}>
               Dashboard
             </Link>
+            
+            {/* X.com Dropdown */}
+            <div className="relative group">
+              <button 
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-1 ${
+                  ['/timeline', '/search', '/profile'].includes(pathname) ? 'bg-primary text-background' : 'text-accent hover:bg-primary/10'
+                }`}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                X.com
+                <ChevronDown className="w-4 h-4 ml-1 transform group-hover:rotate-180 transition-transform" />
+              </button>
+              
+              <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-background border border-primary/10 overflow-hidden invisible group-hover:visible opacity-0 group-hover:opacity-100 transform origin-top scale-95 group-hover:scale-100 transition-all">
+                <div className="py-1">
+                  <Link 
+                    href="/timeline" 
+                    className={`block px-4 py-2 text-sm ${pathname === '/timeline' ? 'bg-primary/10 text-primary' : 'text-accent hover:bg-primary/5'}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4" />
+                      Timeline
+                    </span>
+                  </Link>
+                  <Link 
+                    href="/search" 
+                    className={`block px-4 py-2 text-sm ${pathname === '/search' ? 'bg-primary/10 text-primary' : 'text-accent hover:bg-primary/5'}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Search X
+                    </span>
+                  </Link>
+                  <Link 
+                    href="/profile" 
+                    className={`block px-4 py-2 text-sm ${pathname === '/profile' ? 'bg-primary/10 text-primary' : 'text-accent hover:bg-primary/5'}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <BarChart2 className="w-4 h-4" />
+                      Analytics
+                    </span>
+                  </Link>
+                  {isXAuthorized ? (
+                    <a
+                      href="https://x.com/home"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block px-4 py-2 text-sm text-accent hover:bg-primary/5"
+                    >
+                      <span className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4" />
+                        X.com Home
+                      </span>
+                    </a>
+                  ) : (
+                    <button
+                      onClick={authorizeX}
+                      className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-primary/5"
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                        Connect X Account
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
           
           {/* Profile Dropdown (Desktop) */}

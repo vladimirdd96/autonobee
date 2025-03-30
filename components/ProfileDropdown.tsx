@@ -193,6 +193,52 @@ export default function ProfileDropdown({ onLoadingChange }: ProfileDropdownProp
                       Disconnect
                     </button>
                   </div>
+                  
+                  {/* X Account Quick Links */}
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Link
+                      href="/timeline"
+                      className="text-xs px-2 py-1.5 flex items-center justify-center gap-1 bg-primary/5 text-primary rounded hover:bg-primary/10 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      Timeline
+                    </Link>
+                    <Link
+                      href="/search"
+                      className="text-xs px-2 py-1.5 flex items-center justify-center gap-1 bg-primary/5 text-primary rounded hover:bg-primary/10 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      Search X
+                    </Link>
+                    <Link
+                      href="/profile"
+                      className="text-xs px-2 py-1.5 flex items-center justify-center gap-1 bg-primary/5 text-primary rounded hover:bg-primary/10 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      Analytics
+                    </Link>
+                    <a
+                      href="https://x.com/home"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs px-2 py-1.5 flex items-center justify-center gap-1 bg-primary/5 text-primary rounded hover:bg-primary/10 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      X.com
+                    </a>
+                  </div>
                 </div>
               ) : (
                 <button

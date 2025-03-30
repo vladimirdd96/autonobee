@@ -95,75 +95,34 @@ export default function Dashboard() {
     location: ''
   });
   
-  // Fetch personalized trends when user is authorized
-  useEffect(() => {
-    async function fetchPersonalizedTrends() {
-      if (!isXAuthorized) return;
-      
-      setDashboardData(prev => ({ ...prev, isLoading: true, error: null }));
-      
-      try {
-        const response = await fetch('/api/x/trends/personalized');
-        
-        // If the response is not OK, parse the error
-        if (!response.ok) {
-          const errorData = await response.json();
-          
-          // Check if the error is authorization related
-          if (response.status === 401) {
-            console.error('Authentication error:', errorData);
-            throw new Error('Authentication failed - please try reconnecting your X account');
-          }
-          
-          // Rate limiting error
-          if (response.status === 429) {
-            throw new Error('Rate limit exceeded - please try again later');
-          }
-          
-          // General API error
-          throw new Error(errorData.message || `API error (${response.status}): Failed to fetch trends`);
-        }
-        
-        const data = await response.json();
-        console.log('Trends data:', data);
-        
-        // Check if we got actual trends data
-        if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
-          console.warn('No trends data received:', data);
-          setDashboardData({
-            isLoading: false,
-            error: null,
-            trends: []
-          });
-          return;
-        }
-        
-        setDashboardData({
-          isLoading: false,
-          error: null,
-          trends: data.data || []
-        });
-      } catch (error) {
-        console.error('Error fetching personalized trends:', error);
-        setDashboardData(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          error: error instanceof Error ? error.message : 'Something went wrong'
-        }));
-      }
-    }
-    
-    if (isXAuthorized) {
-      fetchPersonalizedTrends();
-    }
-  }, [isXAuthorized]);
+  const [xAuth, setXAuth] = useState<{
+    isAuthenticated: boolean;
+    user: {
+      name?: string;
+      username?: string;
+      profileImage?: string;
+    } | null;
+    loading: boolean;
+  }>({
+    isAuthenticated: false,
+    user: null,
+    loading: true
+  });
   
-  // Fetch public trends for non-authenticated users
+  // X User profile analytics state
+  const [profileAnalytics, setProfileAnalytics] = useState<{
+    isLoading: boolean;
+    error: string | null;
+    data: any | null;
+  }>({
+    isLoading: false,
+    error: null,
+    data: null
+  });
+  
+  // Fetch public trends for all users
   useEffect(() => {
     async function fetchPublicTrends() {
-      // Don't fetch public trends if user is authenticated with X
-      if (isXAuthorized) return;
-      
       setPublicTrendData(prev => ({ ...prev, isLoading: true, error: null }));
       
       try {
@@ -177,23 +136,30 @@ export default function Dashboard() {
         const data = await response.json();
         console.log('Public trends data:', data);
         
-        // Check if we got actual trends data
-        if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
-          console.warn('No public trends data received:', data);
-          setPublicTrendData({
-            isLoading: false,
-            error: null,
-            trends: [],
-            location: 'Global'
-          });
-          return;
-        }
+        // Transform the trends data for UI display
+        const formattedTrends = data.trends.map((trend: {
+          name: string;
+          tweet_volume?: number | null;
+          category?: string;
+        }) => ({
+          category: trend.category || 'General',
+          post_count: trend.tweet_volume || 0,
+          trend_name: trend.name,
+          trending_since: new Date().toISOString()
+        }));
         
         setPublicTrendData({
           isLoading: false,
           error: null,
-          trends: data.data || [],
-          location: data.location || 'Global'
+          trends: formattedTrends,
+          location: data.location?.name || 'Worldwide'
+        });
+        
+        // Also update dashboard data with the same trends
+        setDashboardData({
+          isLoading: false,
+          error: null,
+          trends: formattedTrends
         });
       } catch (error) {
         console.error('Error fetching public trends:', error);
@@ -202,11 +168,77 @@ export default function Dashboard() {
           isLoading: false, 
           error: error instanceof Error ? error.message : 'Something went wrong'
         }));
+        
+        // Also update dashboard data error state
+        setDashboardData(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Something went wrong'
+        }));
       }
     }
     
     fetchPublicTrends();
-  }, [isXAuthorized]);
+  }, []);
+  
+  useEffect(() => {
+    // Check X authentication status
+    async function checkXAuth() {
+      try {
+        const res = await fetch('/api/x/auth/check');
+        if (res.ok) {
+          const data = await res.json();
+          setXAuth({
+            isAuthenticated: data.isAuthenticated,
+            user: data.user || null,
+            loading: false
+          });
+          
+          // If authenticated, fetch user profile analytics
+          if (data.isAuthenticated) {
+            fetchProfileAnalytics();
+          }
+        } else {
+          setXAuth(prev => ({ ...prev, loading: false }));
+        }
+      } catch (error) {
+        console.error('Failed to check X auth status:', error);
+        setXAuth(prev => ({ ...prev, loading: false }));
+      }
+    }
+    
+    checkXAuth();
+  }, []);
+  
+  // Fetch user profile analytics from X API
+  async function fetchProfileAnalytics() {
+    setProfileAnalytics(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      const response = await fetch('/api/x/analytics/profile');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `API error (${response.status}): Failed to fetch profile analytics`);
+      }
+      
+      const data = await response.json();
+      console.log('Profile analytics data:', data);
+      
+      setProfileAnalytics({
+        isLoading: false,
+        error: null,
+        data
+      });
+    } catch (error) {
+      console.error('Error fetching profile analytics:', error);
+      setProfileAnalytics(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Something went wrong'
+      }));
+    }
+  }
   
   // Transform trends data for display
   const transformedTrendsForDisplay = dashboardData.trends.slice(0, 3).map(trend => {
@@ -587,6 +619,170 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+
+          {/* X.com Authentication Status */}
+          <div className="mb-8 bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+            <h2 className="text-xl text-yellow-500 font-semibold mb-4">X.com Integration</h2>
+            
+            {xAuth.loading ? (
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-700 rounded w-1/4 mb-3"></div>
+                <div className="h-10 bg-gray-700 rounded w-1/2"></div>
+              </div>
+            ) : xAuth.isAuthenticated ? (
+              <div>
+                <div className="flex items-center mb-4">
+                  <div className="bg-green-500 w-3 h-3 rounded-full mr-2"></div>
+                  <span className="text-green-400">Connected to X.com</span>
+                </div>
+                
+                {xAuth.user && (
+                  <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 mb-4">
+                    <div className="flex items-center">
+                      {xAuth.user.profileImage ? (
+                        <img 
+                          src={xAuth.user.profileImage} 
+                          alt="Profile" 
+                          className="w-12 h-12 rounded-full mr-4" 
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mr-4">
+                          <span className="text-xl font-bold text-yellow-500">
+                            {xAuth.user.name?.[0] || '?'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <h3 className="font-semibold text-white">{xAuth.user.name}</h3>
+                        <p className="text-gray-400">@{xAuth.user.username}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex space-x-4">
+                  <Link 
+                    href="/profile" 
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition"
+                  >
+                    View Profile Analytics
+                  </Link>
+                  
+                  <Link 
+                    href="/search" 
+                    className="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition"
+                  >
+                    Search X Users
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center mb-4">
+                  <div className="bg-red-500 w-3 h-3 rounded-full mr-2"></div>
+                  <span className="text-red-400">Not connected to X.com</span>
+                </div>
+                
+                <p className="text-gray-400 mb-4">
+                  Connect your X account to access trends, analytics, and search functionality.
+                </p>
+                
+                <a 
+                  href="/api/x/auth" 
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition inline-block"
+                >
+                  Connect X Account
+                </a>
+              </div>
+            )}
+          </div>
+          
+          {/* X Profile Analytics */}
+          {xAuth.isAuthenticated && profileAnalytics.data && (
+            <div className="mb-8 bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+              <h2 className="text-xl text-yellow-500 font-semibold mb-4">Your X Profile Stats</h2>
+              
+              {profileAnalytics.isLoading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="h-24 bg-gray-700 rounded"></div>
+                    ))}
+                  </div>
+                </div>
+              ) : profileAnalytics.error ? (
+                <div className="bg-red-900/30 border border-red-700 p-4 rounded-md text-red-300">
+                  <div className="flex items-center mb-2">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    <span className="font-semibold">Error loading analytics</span>
+                  </div>
+                  <p className="text-sm">{profileAnalytics.error}</p>
+                  <button 
+                    onClick={fetchProfileAnalytics}
+                    className="mt-3 bg-red-700/50 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {/* Profile Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                      <div className="text-gray-400 text-sm mb-1">Followers</div>
+                      <div className="text-xl font-bold text-white">
+                        {profileAnalytics.data.metrics?.followers.toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                      <div className="text-gray-400 text-sm mb-1">Following</div>
+                      <div className="text-xl font-bold text-white">
+                        {profileAnalytics.data.metrics?.following.toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                      <div className="text-gray-400 text-sm mb-1">Total Posts</div>
+                      <div className="text-xl font-bold text-white">
+                        {profileAnalytics.data.metrics?.tweets.toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                      <div className="text-gray-400 text-sm mb-1">Engagement Rate</div>
+                      <div className="text-xl font-bold text-white">
+                        {profileAnalytics.data.engagement?.rate}%
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Recent Posts */}
+                  {profileAnalytics.data.recentTweets?.length > 0 && (
+                    <div>
+                      <h3 className="text-lg text-white font-semibold mb-3">Recent Posts</h3>
+                      <div className="space-y-3">
+                        {profileAnalytics.data.recentTweets.slice(0, 2).map((tweet: any, idx: number) => (
+                          <div key={idx} className="bg-gray-900/30 p-3 rounded border border-gray-800">
+                            <p className="text-gray-300 text-sm line-clamp-2 mb-2">{tweet.text}</p>
+                            <div className="flex justify-between text-xs text-gray-400">
+                              <div className="flex space-x-3">
+                                <span>❤️ {tweet.metrics.like_count}</span>
+                                <span>🔄 {tweet.metrics.retweet_count}</span>
+                                <span>💬 {tweet.metrics.reply_count}</span>
+                              </div>
+                              <div>{new Date(tweet.created_at).toLocaleDateString()}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Layout>

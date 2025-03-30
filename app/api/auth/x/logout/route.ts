@@ -23,6 +23,9 @@ export async function GET() {
   response.cookies.delete('x_refresh_token');
   response.cookies.delete('x_user');
   response.cookies.delete('x_user_id');
+  response.cookies.delete('x_auth');
+  response.cookies.delete('x_auth_method');
+  response.cookies.delete('x_access_token_secret');
   
   return response;
 } 

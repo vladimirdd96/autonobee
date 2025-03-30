@@ -9,7 +9,7 @@ const http = require('http');
 dotenv.config();
 
 // Load .env.local file if it exists
-const envLocalPath = path.join(__dirname, '.env.local');
+const envLocalPath = path.join(__dirname, '.env');
 if (fs.existsSync(envLocalPath)) {
   const envLocalConfig = dotenv.parse(fs.readFileSync(envLocalPath));
   for (const k in envLocalConfig) {
@@ -73,19 +73,19 @@ const findAvailablePort = async (startPort) => {
 async function startUnifiedSetup() {
   console.log('Starting unified setup with ngrok path-based routing...');
   
-  if (!process.env.NGROK_STATIC_DOMAIN) {
+  if (!process.env.NEXT_PUBLIC_NGROK_STATIC_DOMAIN) {
     console.error('Error: NGROK_STATIC_DOMAIN is required');
     console.log('Please add NGROK_STATIC_DOMAIN to your .env or .env.local file');
     process.exit(1);
   }
   
-  if (!process.env.NGROK_AUTHTOKEN) {
+  if (!process.env.NEXT_PUBLIC_NGROK_AUTHTOKEN) {
     console.error('Error: NGROK_AUTHTOKEN is required');
     console.log('Please add NGROK_AUTHTOKEN to your .env or .env.local file');
     process.exit(1);
   }
   
-  const staticDomain = process.env.NGROK_STATIC_DOMAIN;
+  const staticDomain = process.env.NEXT_PUBLIC_NGROK_STATIC_DOMAIN;
   const requestedPort = process.env.PORT || 3000;
   
   // Check if the application is running
@@ -174,7 +174,7 @@ async function startUnifiedSetup() {
   console.log(`Setting callback URL to: ${process.env.CALLBACK_URL}`);
   
   // Use the npx command to start ngrok with the static domain and auth token
-  const authToken = process.env.NGROK_AUTHTOKEN;
+  const authToken = process.env.NEXT_PUBLIC_NGROK_AUTHTOKEN;
   const command = `npx ngrok http --authtoken=${authToken} --domain=${staticDomain} ${PORT}`;
   
   console.log(`Executing command: ${command}`);
