@@ -9,6 +9,8 @@ node_modules
 # Production
 /build
 /dist
+/.next/
+/out/
 
 # Environment files
 .env
@@ -51,3 +53,6 @@ Thumbs.db
 
 # Optional REPL history
 .node_repl_history
+
+# Local changes tracking
+Changes.MD
