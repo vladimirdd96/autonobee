@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import xApiAuth from '@/app/api/auth/x/utils/XApiAuth';
+import { cacheService } from '@/lib/services/cache';
+import { logDebug } from '@/lib/utils/logger';
 
 // Mark this route as dynamic
 export const dynamic = 'force-dynamic';
-
-// Debug logger
-const logDebug = (message: string, data?: any) => {
-  console.log(`[X CONTENT ANALYTICS] ${message}`, data ? data : '');
-};
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +21,26 @@ export async function GET(request: NextRequest) {
     // Parse user data
     const userData = JSON.parse(xUser);
     const xUserId = userData.id;
+    
+    // Get force refresh parameter
+    const searchParams = request.nextUrl.searchParams;
+    const forceRefresh = searchParams.get('force_refresh') === 'true';
+    
+    // Create cache key
+    const cacheKey = `analytics:content:${xUserId}`;
+    
+    // Check cache if not forcing refresh
+    if (!forceRefresh) {
+      const cachedData = cacheService.get(cacheKey);
+      if (cachedData) {
+        return NextResponse.json(cachedData, {
+          headers: {
+            'X-Cache': 'HIT',
+            'Cache-Control': 'public, max-age=300' // 5 minutes
+          }
+        });
+      }
+    }
     
     // Determine auth method
     const authMethod = cookieStore.get('x_auth_method')?.value || 'oauth2';
@@ -121,13 +138,15 @@ export async function GET(request: NextRequest) {
       
       return {
         id: tweet.id,
-        title: title,
+        title,
+        text: tweet.text,
         created_at: tweet.created_at,
-        views: metrics.impression_count || Math.round(Math.random() * 1000 + 500), // Random if not available
-        engagement: Math.round(engagementRate * 10) / 10, // Round to 1 decimal place
-        conversions: conversionRate,
-        trend: trend,
         metrics: {
+          impressions,
+          interactions,
+          engagementRate: engagementRate.toFixed(1),
+          conversionRate: conversionRate.toFixed(1),
+          trend,
           likes: metrics.like_count || 0,
           replies: metrics.reply_count || 0,
           retweets: metrics.retweet_count || 0,
@@ -136,107 +155,46 @@ export async function GET(request: NextRequest) {
       };
     });
     
-    // Calculate averages and totals
-    const totalViews = contentPerformance.reduce((sum: number, item: any) => sum + item.views, 0);
-    const avgEngagement = contentPerformance.length > 0 
-      ? contentPerformance.reduce((sum: number, item: any) => sum + item.engagement, 0) / contentPerformance.length 
-      : 0;
-    const avgConversions = contentPerformance.length > 0 
-      ? contentPerformance.reduce((sum: number, item: any) => sum + item.conversions, 0) / contentPerformance.length 
-      : 0;
-      
-    // Prepare response
-    const analytics = {
-      summary: {
-        totalViews: totalViews,
-        avgEngagement: Math.round(avgEngagement * 10) / 10,
-        avgConversions: Math.round(avgConversions * 10) / 10,
-        totalPosts: contentPerformance.length
-      },
+    // Calculate overall content performance metrics
+    const totalImpressions = contentPerformance.reduce((sum, content) => sum + content.metrics.impressions, 0);
+    const totalInteractions = contentPerformance.reduce((sum, content) => sum + content.metrics.interactions, 0);
+    const avgEngagementRate = contentPerformance.reduce((sum, content) => sum + parseFloat(content.metrics.engagementRate), 0) / contentPerformance.length;
+    const avgConversionRate = contentPerformance.reduce((sum, content) => sum + parseFloat(content.metrics.conversionRate), 0) / contentPerformance.length;
+    
+    const response = {
       content: contentPerformance,
-      growth: {
-        views: 12.5, // Mock data for view growth
-        engagement: 5.2, // Mock data for engagement growth
-        conversions: 2.1 // Mock data for conversion growth
+      metrics: {
+        totalImpressions,
+        totalInteractions,
+        averageEngagementRate: avgEngagementRate.toFixed(1),
+        averageConversionRate: avgConversionRate.toFixed(1),
+        totalContent: contentPerformance.length
       }
     };
     
-    return NextResponse.json(analytics);
+    // Cache the response
+    cacheService.set(cacheKey, response);
+    
+    return NextResponse.json(response, {
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=300' // 5 minutes
+      }
+    });
   } catch (error: any) {
     logDebug('Error fetching content analytics:', error);
     
-    // For build purposes, return a mock response
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({
-        summary: {
-          totalViews: 12500,
-          avgEngagement: 24.5,
-          avgConversions: 8.3,
-          totalPosts: 5
-        },
-        content: [
-          {
-            id: 'mock-1',
-            title: 'How AI is Transforming Content Creation',
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            views: 1240,
-            engagement: 32,
-            conversions: 15,
-            trend: 'up',
-            metrics: {
-              likes: 45,
-              replies: 12,
-              retweets: 8,
-              quotes: 3
-            }
-          },
-          {
-            id: 'mock-2',
-            title: '5 Ways to Optimize Your Content Strategy',
-            created_at: new Date(Date.now() - 172800000).toISOString(),
-            views: 950,
-            engagement: 28,
-            conversions: 12,
-            trend: 'up',
-            metrics: {
-              likes: 38,
-              replies: 8,
-              retweets: 6,
-              quotes: 2
-            }
-          },
-          {
-            id: 'mock-3',
-            title: 'The Future of Digital Marketing',
-            created_at: new Date(Date.now() - 259200000).toISOString(),
-            views: 820,
-            engagement: 19,
-            conversions: 8,
-            trend: 'down',
-            metrics: {
-              likes: 25,
-              replies: 5,
-              retweets: 4,
-              quotes: 1
-            }
-          }
-        ],
-        growth: {
-          views: 12.5,
-          engagement: 5.2,
-          conversions: 2.1
-        }
-      });
+    // Handle rate limiting
+    if (error.response?.status === 429) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      );
     }
     
-    // Provide a more user-friendly error message
-    const errorMessage = error.details?.error_description || 
-                       error.message || 
-                       'Failed to fetch content analytics';
-    
-    return NextResponse.json({
-      error: error.code || 'FETCH_ERROR',
-      message: errorMessage
-    }, { status: error.code === 'RATE_LIMIT' ? 429 : 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch content analytics' },
+      { status: 500 }
+    );
   }
 } 

@@ -1,17 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { cacheService } from '@/lib/services/cache';
+
+// Define types for tweet metrics
+interface TweetMetrics {
+  like_count?: number;
+  retweet_count?: number;
+  reply_count?: number;
+  quote_count?: number;
+}
+
+interface Tweet {
+  public_metrics?: TweetMetrics;
+  created_at?: string;
+}
+
+interface DayCount {
+  Sunday: number;
+  Monday: number;
+  Tuesday: number;
+  Wednesday: number;
+  Thursday: number;
+  Friday: number;
+  Saturday: number;
+}
+
+interface HourCount {
+  [key: number]: number;
+}
+
+interface DatesMap {
+  [key: string]: number;
+}
 
 /**
  * GET /api/x/profile
  * Returns authenticated user profile data from X.com
  */
 export async function GET(request: NextRequest) {
+  let userId: string | undefined;
+  
   try {
     // Check for authentication
     const isAuthenticated = cookies().get('x_auth')?.value === 'true';
     const accessToken = cookies().get('x_access_token')?.value;
-    const userId = cookies().get('x_user_id')?.value;
+    userId = cookies().get('x_user_id')?.value;
     
     if (!isAuthenticated || !accessToken || !userId) {
       return NextResponse.json(
@@ -20,80 +54,135 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Fetch user data
-    const userResponse = await axios.get('https://api.twitter.com/2/users/me', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      params: {
-        'user.fields': 'description,profile_image_url,public_metrics,verified,created_at,location,url'
+    // Get force refresh parameter
+    const searchParams = request.nextUrl.searchParams;
+    const forceRefresh = searchParams.get('force_refresh') === 'true';
+    
+    // Create cache key
+    const cacheKey = `profile:${userId}`;
+    
+    // Check cache if not forcing refresh
+    if (!forceRefresh) {
+      const cachedData = cacheService.get(cacheKey);
+      if (cachedData) {
+        return NextResponse.json(cachedData, {
+          headers: {
+            'X-Cache': 'HIT',
+            'Cache-Control': 'public, max-age=1800' // 30 minutes
+          }
+        });
       }
-    });
+    }
     
-    const userData = userResponse.data.data;
-    
-    // Fetch recent tweets
-    const tweetsResponse = await axios.get(`https://api.twitter.com/2/users/${userId}/tweets`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      params: {
-        'max_results': 50,
-        'tweet.fields': 'public_metrics,created_at,entities',
-        'exclude': 'retweets,replies'
-      }
-    });
-    
-    const tweets = tweetsResponse.data.data || [];
-    
-    // Calculate engagement metrics
-    const engagement = calculateEngagementMetrics(tweets);
-    
-    // Calculate posting patterns
-    const patterns = calculatePostingPatterns(tweets);
-    
-    // Format profile data for UI
-    const profileData = {
-      profile: {
-        id: userData.id,
-        username: userData.username,
-        name: userData.name,
-        description: userData.description || '',
-        profileImage: userData.profile_image_url ? userData.profile_image_url.replace('_normal', '') : null,
-        verified: userData.verified || false,
-        metrics: {
-          followers: userData.public_metrics?.followers_count || 0,
-          following: userData.public_metrics?.following_count || 0,
-          tweets: userData.public_metrics?.tweet_count || 0,
-          likes: userData.public_metrics?.like_count || 0,
+    try {
+      // Fetch user data
+      const userResponse = await axios.get('https://api.twitter.com/2/users/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
         },
-        location: userData.location || '',
-        url: userData.url || '',
-        createdAt: userData.created_at || '',
-      },
-      analytics: {
-        totalTweets: userData.public_metrics?.tweet_count || 0,
-        totalFollowers: userData.public_metrics?.followers_count || 0,
-        totalFollowing: userData.public_metrics?.following_count || 0,
-        engagement,
-        patterns
+        params: {
+          'user.fields': 'description,profile_image_url,public_metrics,verified,created_at,location,url'
+        }
+      });
+      
+      const userData = userResponse.data.data;
+      
+      // Fetch recent tweets
+      const tweetsResponse = await axios.get(`https://api.twitter.com/2/users/${userId}/tweets`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        params: {
+          'max_results': 50,
+          'tweet.fields': 'public_metrics,created_at,entities',
+          'exclude': 'retweets,replies'
+        }
+      });
+      
+      const tweets = tweetsResponse.data.data || [];
+      
+      // Calculate engagement metrics
+      const engagement = calculateEngagementMetrics(tweets);
+      
+      // Calculate posting patterns
+      const patterns = calculatePostingPatterns(tweets);
+      
+      // Format profile data for UI
+      const profileData = {
+        profile: {
+          id: userData.id,
+          username: userData.username,
+          name: userData.name,
+          description: userData.description || '',
+          profileImage: userData.profile_image_url ? userData.profile_image_url.replace('_normal', '') : null,
+          verified: userData.verified || false,
+          metrics: {
+            followers: userData.public_metrics?.followers_count || 0,
+            following: userData.public_metrics?.following_count || 0,
+            tweets: userData.public_metrics?.tweet_count || 0,
+            likes: userData.public_metrics?.like_count || 0,
+          },
+          location: userData.location || '',
+          url: userData.url || '',
+          createdAt: userData.created_at || '',
+        },
+        analytics: {
+          totalTweets: userData.public_metrics?.tweet_count || 0,
+          totalFollowers: userData.public_metrics?.followers_count || 0,
+          totalFollowing: userData.public_metrics?.following_count || 0,
+          engagement,
+          patterns
+        }
+      };
+      
+      // Cache the response
+      cacheService.set(cacheKey, profileData);
+      
+      return NextResponse.json(profileData, {
+        headers: {
+          'X-Cache': 'MISS',
+          'Cache-Control': 'public, max-age=1800' // 30 minutes
+        }
+      });
+    } catch (apiError: any) {
+      // If we hit a rate limit and have cached data, return it
+      if (apiError.response?.status === 429) {
+        const cachedData = cacheService.get(cacheKey);
+        if (cachedData) {
+          return NextResponse.json(cachedData, {
+            headers: {
+              'X-Cache': 'HIT',
+              'Cache-Control': 'public, max-age=1800', // 30 minutes
+              'X-Rate-Limit-Exceeded': 'true'
+            }
+          });
+        }
       }
-    };
-    
-    return NextResponse.json(profileData);
-  } catch (error) {
+      throw apiError;
+    }
+  } catch (error: any) {
     console.error('Error fetching profile:', error);
     
     // Check for specific error types
-    if (error.response?.status === 401) {
-      // Handle expired token
-      cookies().set('x_auth', '', { maxAge: 0, path: '/' });
-      return NextResponse.json(
-        { error: 'Authentication expired', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
+    if (error instanceof AxiosError) {
+      if (error.response?.status === 401) {
+        // Handle expired token
+        cookies().set('x_auth', '', { maxAge: 0, path: '/' });
+        return NextResponse.json(
+          { error: 'Authentication expired', code: 'AUTH_EXPIRED' },
+          { status: 401 }
+        );
+      }
+      
+      // Handle rate limiting
+      if (error.response?.status === 429) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded. Please try again later.' },
+          { status: 429 }
+        );
+      }
     }
     
     return NextResponse.json(
@@ -106,7 +195,7 @@ export async function GET(request: NextRequest) {
 /**
  * Calculate engagement metrics from tweets
  */
-function calculateEngagementMetrics(tweets) {
+function calculateEngagementMetrics(tweets: Tweet[]) {
   if (!tweets || tweets.length === 0) {
     return {
       averageLikes: 0,
@@ -152,7 +241,7 @@ function calculateEngagementMetrics(tweets) {
 /**
  * Calculate posting patterns from tweets
  */
-function calculatePostingPatterns(tweets) {
+function calculatePostingPatterns(tweets: Tweet[]) {
   if (!tweets || tweets.length === 0) {
     return {
       mostActiveDay: 'N/A',
@@ -162,7 +251,7 @@ function calculatePostingPatterns(tweets) {
     };
   }
   
-  const dayCount = {
+  const dayCount: DayCount = {
     'Sunday': 0,
     'Monday': 0,
     'Tuesday': 0,
@@ -172,13 +261,13 @@ function calculatePostingPatterns(tweets) {
     'Saturday': 0
   };
   
-  const hourCount = {};
+  const hourCount: HourCount = {};
   for (let i = 0; i < 24; i++) {
     hourCount[i] = 0;
   }
   
   // Track dates to calculate average posts per day
-  const datesMap = {};
+  const datesMap: DatesMap = {};
   
   tweets.forEach(tweet => {
     if (tweet.created_at) {
@@ -189,7 +278,7 @@ function calculatePostingPatterns(tweets) {
       
       // Increment day count
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      dayCount[dayNames[day]]++;
+      dayCount[dayNames[day] as keyof DayCount]++;
       
       // Increment hour count
       hourCount[hour]++;

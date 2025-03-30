@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { BackgroundBeams } from "@/components/aceternity/background-beams";
 import { AnimatedGradientText } from "@/components/aceternity/animated-gradient-text";
@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Heart, RefreshCw, MessageCircle, Share, Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useXData } from "@/lib/hooks/useXData";
 
 interface Tweet {
   id: string;
@@ -40,40 +41,26 @@ interface Tweet {
 }
 
 export default function Timeline() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tweets, setTweets] = useState<Tweet[]>([]);
   const { isXAuthorized, authorizeX } = useAuth();
 
-  useEffect(() => {
-    if (isXAuthorized) {
-      fetchTimeline();
-    } else {
-      setIsLoading(false);
-    }
-  }, [isXAuthorized]);
-
-  async function fetchTimeline() {
-    setIsLoading(true);
-    setError(null);
-
-    try {
+  const {
+    data: timelineData,
+    isLoading,
+    error,
+    refetch: refetchTimeline,
+  } = useXData<{ tweets: Tweet[] }>(
+    ['timeline'],
+    async () => {
       const response = await fetch('/api/x/timeline');
-      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `API error (${response.status}): Failed to fetch timeline`);
+        throw new Error(`API error (${response.status}): Failed to fetch timeline`);
       }
-      
-      const data = await response.json();
-      setTweets(data.tweets || []);
-    } catch (error) {
-      console.error('Error fetching timeline:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load your timeline');
-    } finally {
-      setIsLoading(false);
+      return response.json();
+    },
+    {
+      enabled: isXAuthorized,
     }
-  }
+  );
 
   // Format tweet text with hashtags, mentions, and links
   function formatTweetText(tweet: Tweet) {
@@ -134,23 +121,23 @@ export default function Timeline() {
         <div className="fixed top-0 left-0 right-0">
           <BackgroundBeams />
         </div>
+        <div className="absolute -top-8 left-0 w-screen h-[100vh] pointer-events-none z-0">
+          <div className="absolute top-0 left-0 w-full h-full">
+            <SparklesCore
+              background="transparent"
+              minSize={0.4}
+              maxSize={1}
+              particleDensity={200}
+              className="w-full h-full"
+              particleColor="#f9b72d"
+            />
+          </div>
+        </div>
         <div className="relative z-10 px-4 py-6">
           <div className="relative">
             <h1 className="text-4xl font-bold mb-2">
               <AnimatedGradientText text="Your X Timeline" />
             </h1>
-            <div className="absolute -top-8 left-0 w-screen h-[100vh] pointer-events-none z-0">
-              <div className="absolute top-0 left-0 w-full h-full">
-                <SparklesCore
-                  background="transparent"
-                  minSize={0.4}
-                  maxSize={1}
-                  particleDensity={200}
-                  className="w-full h-full"
-                  particleColor="#f9b72d"
-                />
-              </div>
-            </div>
           </div>
           
           {/* Authentication Check */}
@@ -189,9 +176,9 @@ export default function Timeline() {
                 <AlertCircle className="w-6 h-6 text-red-400 mr-3 flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2">Error Loading Timeline</h3>
-                  <p className="text-white/80 mb-4">{error}</p>
+                  <p className="text-white/80 mb-4">{error instanceof Error ? error.message : 'Failed to load your timeline'}</p>
                   <button
-                    onClick={fetchTimeline}
+                    onClick={() => refetchTimeline()}
                     className="px-4 py-2 bg-red-500/30 text-white rounded-md hover:bg-red-500/50 transition-colors"
                   >
                     Try Again
@@ -207,7 +194,7 @@ export default function Timeline() {
               <div className="mb-6 flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-[#ffffff]">Recent Tweets</h2>
                 <button
-                  onClick={fetchTimeline}
+                  onClick={() => refetchTimeline()}
                   className="flex items-center gap-2 px-3 py-1 bg-[#f9b72d]/10 text-[#f9b72d] rounded-md hover:bg-[#f9b72d]/20 transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -215,13 +202,13 @@ export default function Timeline() {
                 </button>
               </div>
               
-              {tweets.length === 0 ? (
+              {timelineData?.tweets.length === 0 ? (
                 <div className="bg-[#000000]/30 border border-[#f9b72d]/10 p-8 rounded-lg text-center">
                   <p className="text-[#cccccc]">No tweets found in your timeline.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {tweets.map(tweet => (
+                  {timelineData?.tweets.map(tweet => (
                     <HoverGlowEffect key={tweet.id}>
                       <div className="bg-[#000000]/20 backdrop-blur-sm border border-[#f9b72d]/10 p-5 rounded-lg">
                         {/* Tweet header - user info */}

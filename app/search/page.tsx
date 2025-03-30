@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { BackgroundBeams } from "@/components/aceternity/background-beams";
 import { AnimatedGradientText } from "@/components/aceternity/animated-gradient-text";
@@ -9,6 +9,7 @@ import { MovingBorder } from "@/components/aceternity/moving-border";
 import { SparklesCore } from "@/components/aceternity/sparkles";
 import Image from "next/image";
 import Link from "next/link";
+import { useXData } from "@/lib/hooks/useXData";
 
 interface UserResult {
   id: string;
@@ -26,33 +27,36 @@ interface UserResult {
 
 export default function Search() {
   const [query, setQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<UserResult[]>([]);
-  const [error, setError] = useState<string | null>(null);
   
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
+  const {
+    data: searchData,
+    isLoading,
+    error,
+    refetch: performSearch
+  } = useXData<{ results: UserResult[] }>(
+    ['search', query],
+    async () => {
+      if (!query.trim()) return { results: [] };
       const res = await fetch(`/api/x/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      
       if (!res.ok) {
+        const data = await res.json();
         throw new Error(data.error || "Failed to search users");
       }
-      
-      setResults(data.results || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setResults([]);
-    } finally {
-      setIsLoading(false);
+      return res.json();
+    },
+    {
+      enabled: Boolean(query.trim()), // Only run the query if there's a search term
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     }
-  }
+  );
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    performSearch();
+  };
+
+  const results = searchData?.results || [];
   
   return (
     <Layout>
@@ -60,27 +64,27 @@ export default function Search() {
         <div className="fixed top-0 left-0 right-0">
           <BackgroundBeams />
         </div>
-        <div className="relative z-10 px-4 py-6">
+        <div className="absolute -top-8 left-0 w-screen h-[100vh] pointer-events-none z-0">
+          <div className="absolute top-0 left-0 w-full h-full">
+            <SparklesCore
+              background="transparent"
+              minSize={0.4}
+              maxSize={1}
+              particleDensity={200}
+              className="w-full h-full"
+              particleColor="#f9b72d"
+            />
+          </div>
+        </div>
+        <div className="relative z-10 px-4 py-6 flex flex-col items-center">
           <div className="relative">
             <h1 className="text-4xl font-bold mb-2">
               <AnimatedGradientText text="X.com User Search" />
             </h1>
-            <div className="absolute -top-8 left-0 w-screen h-[100vh] pointer-events-none z-0">
-              <div className="absolute top-0 left-0 w-full h-full">
-                <SparklesCore
-                  background="transparent"
-                  minSize={0.4}
-                  maxSize={1}
-                  particleDensity={200}
-                  className="w-full h-full"
-                  particleColor="#f9b72d"
-                />
-              </div>
-            </div>
           </div>
           
           {/* Search Form */}
-          <div className="my-8 max-w-3xl mx-auto">
+          <div className="my-8 max-w-3xl flex flex-col items-center mx-auto">
             <MovingBorder
               borderRadius="0.5rem"
               className="p-0.5 bg-gradient-to-br from-[#f9b72d] via-[#f9b72d]/50 to-transparent"
@@ -108,13 +112,13 @@ export default function Search() {
             
             {error && (
               <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 text-red-200 rounded-md">
-                {error}
+                {error instanceof Error ? error.message : "Failed to search users"}
               </div>
             )}
           </div>
           
           {/* Results */}
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-5xl flex flex-col items-center mx-auto">
             <h2 className="text-xl font-bold text-[#ffffff] mb-4">
               {results.length > 0 ? `Search Results (${results.length})` : "No results yet"}
             </h2>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import axios from 'axios';
+import { cacheService } from '@/lib/services/cache';
 
 interface XUser {
   id: string;
@@ -80,6 +81,23 @@ export async function GET(request: NextRequest) {
     // Get timeline parameters
     const searchParams = request.nextUrl.searchParams;
     const maxResults = parseInt(searchParams.get('max_results') || '20');
+    const forceRefresh = searchParams.get('force_refresh') === 'true';
+    
+    // Create cache key
+    const cacheKey = `timeline:${userId}:${maxResults}`;
+    
+    // Check cache if not forcing refresh
+    if (!forceRefresh) {
+      const cachedData = cacheService.get(cacheKey);
+      if (cachedData) {
+        return NextResponse.json(cachedData, {
+          headers: {
+            'X-Cache': 'HIT',
+            'Cache-Control': 'public, max-age=300' // 5 minutes
+          }
+        });
+      }
+    }
     
     // Create appropriate authorization header based on auth method
     const authHeader = authMethod === 'oauth1' 
@@ -139,7 +157,17 @@ export async function GET(request: NextRequest) {
       };
     });
     
-    return NextResponse.json({ tweets: formattedTweets });
+    const responseData = { tweets: formattedTweets };
+    
+    // Cache the response
+    cacheService.set(cacheKey, responseData);
+    
+    return NextResponse.json(responseData, {
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=300' // 5 minutes
+      }
+    });
   } catch (error: any) {
     console.error('Error fetching timeline:', error);
     

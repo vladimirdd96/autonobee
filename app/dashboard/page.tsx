@@ -37,8 +37,9 @@ import {
   AlertCircle,
   ExternalLink
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useXData } from '@/lib/hooks/useXData';
 
 // Types based on X API documentation
 interface TrendData {
@@ -78,7 +79,55 @@ interface PublicTrendData {
 
 export default function Dashboard() {
   // Authentication state
-  const { isXAuthorized, authorizeX } = useAuth();
+  const { isXAuthorized, authorizeX, xUser, isLoading: isAuthLoading } = useAuth();
+  
+  // Use React Query for public trends
+  const { 
+    data: publicTrendData,
+    isLoading: isPublicTrendsLoading,
+    error: publicTrendsError,
+    refetch: refetchPublicTrends
+  } = useXData<{
+    trends: Array<{
+      name: string;
+      tweet_volume?: number | null;
+      category?: string;
+    }>;
+    location: { name: string };
+  }>(['public-trends'], async () => {
+    const response = await fetch('/api/x/trends/public');
+    if (!response.ok) {
+      throw new Error(`API error (${response.status}): Failed to fetch public trends`);
+    }
+    return response.json();
+  });
+
+  // Use React Query for profile analytics
+  const {
+    data: profileAnalyticsData,
+    isLoading: isProfileAnalyticsLoading,
+    error: profileAnalyticsError,
+    refetch: refetchProfileAnalytics
+  } = useXData<any>(['profile-analytics'], async () => {
+    if (!isXAuthorized) {
+      throw new Error('X account not authorized');
+    }
+    
+    const response = await fetch('/api/x/analytics/profile');
+    if (!response.ok) {
+      if (response.status === 401) {
+        // If unauthorized, try to reauthorize
+        authorizeX();
+        throw new Error('Authentication required');
+      }
+      throw new Error(`API error (${response.status}): Failed to fetch profile analytics`);
+    }
+    return response.json();
+  }, {
+    enabled: isXAuthorized, // Only fetch if X is authorized
+    retry: false, // Don't retry on error
+    staleTime: 5 * 60 * 1000 // Cache for 5 minutes
+  });
   
   // Dashboard data state
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -87,14 +136,7 @@ export default function Dashboard() {
     trends: []
   });
   
-  // Public trends data state (for non-authenticated users)
-  const [publicTrendData, setPublicTrendData] = useState<PublicTrendData>({
-    isLoading: false,
-    error: null,
-    trends: [],
-    location: ''
-  });
-  
+  // Update xAuth state based on useAuth hook
   const [xAuth, setXAuth] = useState<{
     isAuthenticated: boolean;
     user: {
@@ -109,181 +151,65 @@ export default function Dashboard() {
     loading: true
   });
   
-  // X User profile analytics state
-  const [profileAnalytics, setProfileAnalytics] = useState<{
-    isLoading: boolean;
-    error: string | null;
-    data: any | null;
-  }>({
-    isLoading: false,
-    error: null,
-    data: null
-  });
-  
-  // Fetch public trends for all users
   useEffect(() => {
-    async function fetchPublicTrends() {
-      setPublicTrendData(prev => ({ ...prev, isLoading: true, error: null }));
-      
-      try {
-        const response = await fetch('/api/x/trends/public');
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `API error (${response.status}): Failed to fetch public trends`);
-        }
-        
-        const data = await response.json();
-        console.log('Public trends data:', data);
-        
-        // Transform the trends data for UI display
-        const formattedTrends = data.trends.map((trend: {
-          name: string;
-          tweet_volume?: number | null;
-          category?: string;
-        }) => ({
-          category: trend.category || 'General',
-          post_count: trend.tweet_volume || 0,
-          trend_name: trend.name,
-          trending_since: new Date().toISOString()
-        }));
-        
-        setPublicTrendData({
-          isLoading: false,
-          error: null,
-          trends: formattedTrends,
-          location: data.location?.name || 'Worldwide'
-        });
-        
-        // Also update dashboard data with the same trends
-        setDashboardData({
-          isLoading: false,
-          error: null,
-          trends: formattedTrends
-        });
-      } catch (error) {
-        console.error('Error fetching public trends:', error);
-        setPublicTrendData(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          error: error instanceof Error ? error.message : 'Something went wrong'
-        }));
-        
-        // Also update dashboard data error state
-        setDashboardData(prev => ({
-          ...prev,
-          isLoading: false,
-          error: error instanceof Error ? error.message : 'Something went wrong'
-        }));
-      }
-    }
-    
-    fetchPublicTrends();
-  }, []);
-  
-  useEffect(() => {
-    // Check X authentication status
-    async function checkXAuth() {
-      try {
-        const res = await fetch('/api/x/auth/check');
-        if (res.ok) {
-          const data = await res.json();
-          setXAuth({
-            isAuthenticated: data.isAuthenticated,
-            user: data.user || null,
-            loading: false
-          });
-          
-          // If authenticated, fetch user profile analytics
-          if (data.isAuthenticated) {
-            fetchProfileAnalytics();
-          }
-        } else {
-          setXAuth(prev => ({ ...prev, loading: false }));
-        }
-      } catch (error) {
-        console.error('Failed to check X auth status:', error);
-        setXAuth(prev => ({ ...prev, loading: false }));
-      }
-    }
-    
-    checkXAuth();
-  }, []);
-  
-  // Fetch user profile analytics from X API
-  async function fetchProfileAnalytics() {
-    setProfileAnalytics(prev => ({ ...prev, isLoading: true, error: null }));
-    
-    try {
-      const response = await fetch('/api/x/analytics/profile');
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `API error (${response.status}): Failed to fetch profile analytics`);
-      }
-      
-      const data = await response.json();
-      console.log('Profile analytics data:', data);
-      
-      setProfileAnalytics({
-        isLoading: false,
-        error: null,
-        data
-      });
-    } catch (error) {
-      console.error('Error fetching profile analytics:', error);
-      setProfileAnalytics(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Something went wrong'
-      }));
-    }
-  }
+    setXAuth({
+      isAuthenticated: isXAuthorized,
+      user: xUser ? {
+        name: xUser.name,
+        username: xUser.username,
+        profileImage: undefined
+      } : null,
+      loading: isAuthLoading
+    });
+  }, [isXAuthorized, xUser, isAuthLoading]);
   
   // Transform trends data for display
-  const transformedTrendsForDisplay = dashboardData.trends.slice(0, 3).map(trend => {
-    const postCount = trend.post_count;
-    let displayCount: number;
-    let countUnit: string | boolean = true; // Default to boolean for type safety
+  const transformedTrendsForDisplay = useMemo(() => {
+    if (!publicTrendData?.trends) return [];
     
-    // Format post counts for display
-    if (postCount > 1000000) {
-      displayCount = Math.round(postCount / 100000) / 10; // Convert to M with one decimal
-      countUnit = 'M';
-    } else if (postCount > 1000) {
-      displayCount = Math.round(postCount / 100) / 10; // Convert to K with one decimal
-      countUnit = 'K';
-    } else {
-      displayCount = postCount;
-      countUnit = true; // Use boolean for small counts
-    }
-    
-    return {
-      title: trend.trend_name,
-      percentage: displayCount,
-      category: trend.category || 'Trending',
-      isIncreasing: true,
-      isPostCount: countUnit,
-    };
-  });
-  
-  // Create top performing content from trends data
-  const topPerformingFromTrends = dashboardData.trends.slice(0, 3).map(trend => ({
-    title: trend.trend_name,
-    views: trend.post_count,
-    engagement: Math.round(Math.random() * 30) + 60, // Random engagement between 60-90%
-    shares: Math.round(trend.post_count / (Math.random() * 20 + 10)), // Random share count based on post count
-    improvement: Math.round(Math.random() * 20) + 5, // Random improvement between 5-25%
-  }));
+    return publicTrendData.trends.slice(0, 3).map(trend => {
+      const postCount = trend.tweet_volume || 0;
+      let displayCount: number;
+      let countUnit: string | boolean = true;
+      
+      if (postCount > 1000000) {
+        displayCount = Math.round(postCount / 100000) / 10;
+        countUnit = 'M';
+      } else if (postCount > 1000) {
+        displayCount = Math.round(postCount / 100) / 10;
+        countUnit = 'K';
+      } else {
+        displayCount = postCount;
+        countUnit = true;
+      }
+      
+      return {
+        title: trend.name,
+        percentage: displayCount,
+        category: trend.category || 'Trending',
+        isIncreasing: true,
+        isPostCount: countUnit,
+      };
+    });
+  }, [publicTrendData?.trends]);
   
   // Create top performing content from public trends data
-  const topPerformingFromPublicTrends = publicTrendData.trends.slice(0, 3).map(trend => ({
+  const topPerformingFromPublicTrends = publicTrendData?.trends?.slice(0, 3).map(trend => ({
+    title: trend.name,
+    views: trend.tweet_volume || 0,
+    engagement: Math.round(Math.random() * 30) + 60,
+    shares: Math.round((trend.tweet_volume || 0) / (Math.random() * 20 + 10)),
+    improvement: Math.round(Math.random() * 20) + 5,
+  })) || [];
+
+  // Create top performing content from trends data
+  const topPerformingFromTrends = dashboardData?.trends?.slice(0, 3).map(trend => ({
     title: trend.trend_name,
-    views: trend.post_count,
-    engagement: Math.round(Math.random() * 30) + 60, // Random engagement between 60-90%
-    shares: Math.round(trend.post_count / (Math.random() * 20 + 10)), // Random share count based on post count
-    improvement: Math.round(Math.random() * 20) + 5, // Random improvement between 5-25%
-  }));
+    views: trend.post_count || 0,
+    engagement: Math.round(Math.random() * 30) + 60,
+    shares: Math.round((trend.post_count || 0) / (Math.random() * 20 + 10)),
+    improvement: Math.round(Math.random() * 20) + 5,
+  })) || [];
   
   // Fallback static data in case the API calls fail
   const staticTopPerforming = [
@@ -435,12 +361,12 @@ export default function Dashboard() {
                   Connect X Account
                 </button>
               </div>
-            ) : dashboardData.isLoading ? (
+            ) : isPublicTrendsLoading ? (
               <div className="flex justify-center items-center p-12">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 <span className="ml-2 text-accent">Loading trends...</span>
               </div>
-            ) : dashboardData.error ? (
+            ) : publicTrendsError ? (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center mb-4">
                 <div className="flex items-start">
                   <div className="mr-3 text-red-500">
@@ -448,10 +374,10 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-medium text-accent/80">Error loading trends</h3>
-                    <p className="mt-1 text-sm text-accent/80">{dashboardData.error}</p>
+                    <p className="mt-1 text-sm text-accent/80">{publicTrendsError instanceof Error ? publicTrendsError.message : 'Something went wrong'}</p>
                     <div className="mt-4 flex justify-center gap-3">
                       {/* Show reconnect button if the error is authentication related */}
-                      {dashboardData.error.includes('Authentication') || dashboardData.error.includes('auth') ? (
+                      {publicTrendsError.message.includes('Authentication') || publicTrendsError.message.includes('auth') ? (
                         <button 
                           onClick={authorizeX} 
                           className="px-4 py-2 bg-blue-500/20 text-blue-300 rounded-md hover:bg-blue-500/30 transition-colors inline-flex items-center"
@@ -481,7 +407,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-            ) : dashboardData.trends.length === 0 ? (
+            ) : publicTrendData?.trends.length === 0 ? (
               <NoTrendsYet isXAuthorized={isXAuthorized} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -512,9 +438,9 @@ export default function Dashboard() {
               </span>
               {isXAuthorized ? (
                 <span className="ml-2 px-2 py-0.5 bg-[#1DA1F2] text-white text-xs rounded-full font-normal">Live from X</span>
-              ) : publicTrendData.location ? (
+              ) : publicTrendData?.location ? (
                 <span className="ml-2 px-2 py-0.5 bg-[#1DA1F2] text-white text-xs rounded-full font-normal">
-                  {publicTrendData.location}
+                  {publicTrendData.location.name}
                 </span>
               ) : (
                 <span className="ml-2 px-2 py-0.5 bg-[#f9b72d] text-black text-xs rounded-full font-normal">Trending</span>
@@ -524,24 +450,24 @@ export default function Dashboard() {
               <p className="text-sm text-accent/80 mb-4">
                 {isXAuthorized 
                   ? "Real-time trending content from X, personalized for your network"
-                  : publicTrendData.location 
-                    ? `Real-time trending topics on X from ${publicTrendData.location}`
+                  : publicTrendData?.location 
+                    ? `Real-time trending topics on X from ${publicTrendData.location.name}`
                     : "Real-time trending topics from around the world"}
               </p>
               
-              {(isXAuthorized && dashboardData.isLoading) || (!isXAuthorized && publicTrendData.isLoading) ? (
+              {(isXAuthorized && isPublicTrendsLoading) || (!isXAuthorized && isPublicTrendsLoading) ? (
                 <div className="flex justify-center items-center p-12">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   <span className="ml-2 text-accent">Loading trending topics...</span>
                 </div>
-              ) : (isXAuthorized && dashboardData.error) ? (
+              ) : (isXAuthorized && publicTrendsError) ? (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center mb-4">
                   <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
                   <h3 className="text-lg font-semibold text-accent mb-2">Error loading topics</h3>
-                  <p className="text-accent/80 mb-4">{dashboardData.error}</p>
+                  <p className="text-accent/80 mb-4">{publicTrendsError instanceof Error ? publicTrendsError.message : 'Something went wrong'}</p>
                   <div className="flex justify-center gap-4">
                     {/* Show reconnect button if the error is authentication related */}
-                    {dashboardData.error.includes('Authentication') || dashboardData.error.includes('auth') ? (
+                    {publicTrendsError.message.includes('Authentication') || publicTrendsError.message.includes('auth') ? (
                       <button 
                         onClick={authorizeX} 
                         className="px-4 py-2 bg-blue-500/20 text-blue-300 rounded-md hover:bg-blue-500/30 transition-colors inline-flex items-center"
@@ -562,11 +488,11 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-              ) : (!isXAuthorized && publicTrendData.error) ? (
+              ) : (!isXAuthorized && publicTrendsError) ? (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center mb-4">
                   <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
                   <h3 className="text-lg font-semibold text-accent mb-2">Error loading trending topics</h3>
-                  <p className="text-accent/80 mb-4">{publicTrendData.error}</p>
+                  <p className="text-accent/80 mb-4">{publicTrendsError instanceof Error ? publicTrendsError.message : 'Something went wrong'}</p>
                   <div className="flex justify-center gap-4">
                     <button 
                       onClick={() => window.location.reload()}
@@ -586,7 +512,7 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
-              ) : (isXAuthorized && dashboardData.trends.length === 0) || (!isXAuthorized && publicTrendData.trends.length === 0) ? (
+              ) : (isXAuthorized && publicTrendData?.trends.length === 0) || (!isXAuthorized && publicTrendData?.trends.length === 0) ? (
                 <NoTrendsYet isXAuthorized={isXAuthorized} />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -624,38 +550,30 @@ export default function Dashboard() {
           <div className="mb-8 bg-gray-800/50 rounded-lg p-6 border border-gray-700">
             <h2 className="text-xl text-yellow-500 font-semibold mb-4">X.com Integration</h2>
             
-            {xAuth.loading ? (
-              <div className="animate-pulse">
-                <div className="h-6 bg-gray-700 rounded w-1/4 mb-3"></div>
-                <div className="h-10 bg-gray-700 rounded w-1/2"></div>
+            {isAuthLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="w-6 h-6 text-yellow-500 animate-spin mr-2" />
+                <span className="text-gray-400">Checking X.com connection...</span>
               </div>
-            ) : xAuth.isAuthenticated ? (
+            ) : isXAuthorized ? (
               <div>
                 <div className="flex items-center mb-4">
                   <div className="bg-green-500 w-3 h-3 rounded-full mr-2"></div>
                   <span className="text-green-400">Connected to X.com</span>
                 </div>
                 
-                {xAuth.user && (
+                {xUser && (
                   <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 mb-4">
                     <div className="flex items-center">
-                      {xAuth.user.profileImage ? (
-                        <img 
-                          src={xAuth.user.profileImage} 
-                          alt="Profile" 
-                          className="w-12 h-12 rounded-full mr-4" 
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mr-4">
-                          <span className="text-xl font-bold text-yellow-500">
-                            {xAuth.user.name?.[0] || '?'}
-                          </span>
-                        </div>
-                      )}
+                      <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mr-4">
+                        <span className="text-xl font-bold text-yellow-500">
+                          {xUser.name?.[0] || '?'}
+                        </span>
+                      </div>
                       
                       <div>
-                        <h3 className="font-semibold text-white">{xAuth.user.name}</h3>
-                        <p className="text-gray-400">@{xAuth.user.username}</p>
+                        <h3 className="font-semibold text-white">{xUser.name}</h3>
+                        <p className="text-gray-400">@{xUser.username}</p>
                       </div>
                     </div>
                   </div>
@@ -688,22 +606,25 @@ export default function Dashboard() {
                   Connect your X account to access trends, analytics, and search functionality.
                 </p>
                 
-                <a 
-                  href="/api/x/auth" 
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition inline-block"
+                <button 
+                  onClick={authorizeX}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition inline-flex items-center"
                 >
+                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
                   Connect X Account
-                </a>
+                </button>
               </div>
             )}
           </div>
           
           {/* X Profile Analytics */}
-          {xAuth.isAuthenticated && profileAnalytics.data && (
+          {xAuth.isAuthenticated && profileAnalyticsData && (
             <div className="mb-8 bg-gray-800/50 rounded-lg p-6 border border-gray-700">
               <h2 className="text-xl text-yellow-500 font-semibold mb-4">Your X Profile Stats</h2>
               
-              {profileAnalytics.isLoading ? (
+              {isProfileAnalyticsLoading ? (
                 <div className="animate-pulse space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[1, 2, 3, 4].map(i => (
@@ -711,15 +632,15 @@ export default function Dashboard() {
                     ))}
                   </div>
                 </div>
-              ) : profileAnalytics.error ? (
+              ) : profileAnalyticsError ? (
                 <div className="bg-red-900/30 border border-red-700 p-4 rounded-md text-red-300">
                   <div className="flex items-center mb-2">
                     <AlertCircle className="w-5 h-5 mr-2" />
                     <span className="font-semibold">Error loading analytics</span>
                   </div>
-                  <p className="text-sm">{profileAnalytics.error}</p>
+                  <p className="text-sm">{profileAnalyticsError instanceof Error ? profileAnalyticsError.message : 'Something went wrong'}</p>
                   <button 
-                    onClick={fetchProfileAnalytics}
+                    onClick={() => refetchProfileAnalytics()}
                     className="mt-3 bg-red-700/50 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors"
                   >
                     Retry
@@ -732,38 +653,38 @@ export default function Dashboard() {
                     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
                       <div className="text-gray-400 text-sm mb-1">Followers</div>
                       <div className="text-xl font-bold text-white">
-                        {profileAnalytics.data.metrics?.followers.toLocaleString()}
+                        {profileAnalyticsData.metrics?.followers.toLocaleString()}
                       </div>
                     </div>
                     
                     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
                       <div className="text-gray-400 text-sm mb-1">Following</div>
                       <div className="text-xl font-bold text-white">
-                        {profileAnalytics.data.metrics?.following.toLocaleString()}
+                        {profileAnalyticsData.metrics?.following.toLocaleString()}
                       </div>
                     </div>
                     
                     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
                       <div className="text-gray-400 text-sm mb-1">Total Posts</div>
                       <div className="text-xl font-bold text-white">
-                        {profileAnalytics.data.metrics?.tweets.toLocaleString()}
+                        {profileAnalyticsData.metrics?.tweets.toLocaleString()}
                       </div>
                     </div>
                     
                     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
                       <div className="text-gray-400 text-sm mb-1">Engagement Rate</div>
                       <div className="text-xl font-bold text-white">
-                        {profileAnalytics.data.engagement?.rate}%
+                        {profileAnalyticsData.engagement?.rate}%
                       </div>
                     </div>
                   </div>
                   
                   {/* Recent Posts */}
-                  {profileAnalytics.data.recentTweets?.length > 0 && (
+                  {profileAnalyticsData.recentTweets?.length > 0 && (
                     <div>
                       <h3 className="text-lg text-white font-semibold mb-3">Recent Posts</h3>
                       <div className="space-y-3">
-                        {profileAnalytics.data.recentTweets.slice(0, 2).map((tweet: any, idx: number) => (
+                        {profileAnalyticsData.recentTweets.slice(0, 2).map((tweet: any, idx: number) => (
                           <div key={idx} className="bg-gray-900/30 p-3 rounded border border-gray-800">
                             <p className="text-gray-300 text-sm line-clamp-2 mb-2">{tweet.text}</p>
                             <div className="flex justify-between text-xs text-gray-400">

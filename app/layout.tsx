@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WalletProvider } from "@/contexts/WalletContext";
+import { QueryProvider } from '@/lib/providers/QueryProvider';
 
 const openSans = Open_Sans({
   weight: ['300', '400', '500', '600', '700'],
@@ -35,13 +36,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`${openSans.variable} ${koulen.variable} font-sans bg-background text-accent`}>
-        <AuthProvider>
-          <WalletProvider>
-            <div className="relative z-10">
-              {children}
-            </div>
-          </WalletProvider>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <WalletProvider>
+              <div className="relative z-10">
+                {children}
+              </div>
+            </WalletProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

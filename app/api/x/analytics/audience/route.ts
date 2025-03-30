@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import xApiAuth from '@/app/api/auth/x/utils/XApiAuth';
+import { cacheService } from '@/lib/services/cache';
+import { logDebug } from '@/lib/utils/logger';
 
 // Mark this route as dynamic
 export const dynamic = 'force-dynamic';
-
-// Debug logger
-const logDebug = (message: string, data?: any) => {
-  console.log(`[X AUDIENCE ANALYTICS] ${message}`, data ? data : '');
-};
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +21,26 @@ export async function GET(request: NextRequest) {
     // Parse user data
     const userData = JSON.parse(xUser);
     const xUserId = userData.id;
+    
+    // Get force refresh parameter
+    const searchParams = request.nextUrl.searchParams;
+    const forceRefresh = searchParams.get('force_refresh') === 'true';
+    
+    // Create cache key
+    const cacheKey = `analytics:audience:${xUserId}`;
+    
+    // Check cache if not forcing refresh
+    if (!forceRefresh) {
+      const cachedData = cacheService.get(cacheKey);
+      if (cachedData) {
+        return NextResponse.json(cachedData, {
+          headers: {
+            'X-Cache': 'HIT',
+            'Cache-Control': 'public, max-age=300' // 5 minutes
+          }
+        });
+      }
+    }
     
     // Determine auth method
     const authMethod = cookieStore.get('x_auth_method')?.value || 'oauth2';
@@ -45,7 +62,6 @@ export async function GET(request: NextRequest) {
         useOAuth1
       );
       
-      console.log('userDataResponse -> ',userDataResponse);
       // Fetch user tweets to analyze engagement patterns
       const tweetsResponse = await xApiAuth.makeAuthenticatedRequest(
         `users/${xUserId}/tweets?max_results=10&tweet.fields=public_metrics`,
@@ -55,7 +71,6 @@ export async function GET(request: NextRequest) {
         useOAuth1
       );
       
-      console.log('tweetsResponse -> ',tweetsResponse);
       userMetrics = userDataResponse.data?.public_metrics || {};
       followerCount = userMetrics.followers_count || 0;
       tweets = tweetsResponse.data || [];
@@ -87,11 +102,10 @@ export async function GET(request: NextRequest) {
           // Continue with mock data
           followerCount = 1000; // Default follower count
         }
+      } else {
+        // If it wasn't an auth error or OAuth 1.0a also failed, rethrow
+        throw apiError;
       }
-      
-      // For audience analytics, we'll continue with mock data regardless of the error
-      // since we're generating synthetic demographics data anyway
-      logDebug('Continuing with mock audience data due to API error:', apiError.message);
     }
     
     // Note: X API doesn't provide direct audience demographics data
@@ -108,134 +122,80 @@ export async function GET(request: NextRequest) {
       { name: "55+", value: Math.floor(Math.random() * 10) + 5 }      // 5-15%
     ];
     
-    // Normalize to ensure percentages add up to 100%
-    const totalAgePct = ageDemographics.reduce((sum: number, item: any) => sum + item.value, 0);
-    const normalizedAgeDemographics = ageDemographics.map(item => ({
-      name: item.name,
-      value: Math.round((item.value / totalAgePct) * 100)
-    }));
-    
-    // Generate platform distribution
-    const platformDistribution = [
-      { name: "Mobile", value: Math.floor(Math.random() * 10) + 60 },  // 60-70%
-      { name: "Desktop", value: Math.floor(Math.random() * 10) + 25 }, // 25-35%
-      { name: "Tablet", value: Math.floor(Math.random() * 5) + 3 }     // 3-8%
+    // Generate gender demographics
+    const genderDemographics = [
+      { name: "Male", value: Math.floor(Math.random() * 10) + 45 },  // 45-55%
+      { name: "Female", value: Math.floor(Math.random() * 10) + 40 }, // 40-50%
+      { name: "Other", value: Math.floor(Math.random() * 5) + 2 }     // 2-7%
     ];
     
-    // Normalize platform distribution
-    const totalPlatformPct = platformDistribution.reduce((sum: number, item: any) => sum + item.value, 0);
-    const normalizedPlatformDistribution = platformDistribution.map(item => ({
-      name: item.name,
-      value: Math.round((item.value / totalPlatformPct) * 100)
-    }));
-    
-    // Generate traffic sources
-    const trafficSources = [
-      { name: "Social Media", value: Math.floor(Math.random() * 10) + 35 }, // 35-45%
-      { name: "Direct", value: Math.floor(Math.random() * 10) + 20 },       // 20-30%
-      { name: "Search", value: Math.floor(Math.random() * 10) + 15 },       // 15-25%
-      { name: "Referral", value: Math.floor(Math.random() * 10) + 5 },      // 5-15%
-      { name: "Email", value: Math.floor(Math.random() * 5) + 3 }           // 3-8%
+    // Generate location demographics (mock data)
+    const locationDemographics = [
+      { name: "United States", value: 35 },
+      { name: "United Kingdom", value: 15 },
+      { name: "Canada", value: 10 },
+      { name: "Australia", value: 8 },
+      { name: "Other", value: 32 }
     ];
     
-    // Normalize traffic sources
-    const totalTrafficPct = trafficSources.reduce((sum: number, item: any) => sum + item.value, 0);
-    const normalizedTrafficSources = trafficSources.map(item => ({
-      name: item.name,
-      value: Math.round((item.value / totalTrafficPct) * 100)
-    }));
-    
-    // Calculate engagement times based on tweet metrics
-    // In real life, this would come from actual timing data
-    const engagementTimes = {
-      morning: Math.floor(Math.random() * 20) + 20,   // 20-40%
-      afternoon: Math.floor(Math.random() * 20) + 30, // 30-50%
-      evening: Math.floor(Math.random() * 20) + 20,   // 20-40% 
-      night: Math.floor(Math.random() * 10) + 5       // 5-15%
-    };
-    
-    // Normalize engagement times
-    const totalEngagementTimePct = Object.values(engagementTimes).reduce((sum, val) => sum + val, 0);
-    const normalizedEngagementTimes = Object.fromEntries(
-      Object.entries(engagementTimes).map(([key, value]) => [
-        key, 
-        Math.round((value / totalEngagementTimePct) * 100)
-      ])
-    );
-    
-    // Prepare response
-    const analytics = {
-      followerCount: followerCount,
-      demographics: {
-        age: normalizedAgeDemographics,
-        platforms: normalizedPlatformDistribution,
-        sources: normalizedTrafficSources
-      },
-      engagement: {
-        times: normalizedEngagementTimes,
-        topDays: ['Wednesday', 'Thursday', 'Saturday'], // Mock data
-        bestTime: '2:00 PM - 4:00 PM' // Mock data
-      },
-      growth: {
-        followers: 5.2, // Mock growth percentage
-        engagement: 3.8 // Mock growth percentage
+    // Calculate engagement patterns
+    const engagementPatterns = {
+      byHour: Array(24).fill(0).map(() => Math.floor(Math.random() * 100)),
+      byDay: {
+        Sunday: Math.floor(Math.random() * 50),
+        Monday: Math.floor(Math.random() * 50),
+        Tuesday: Math.floor(Math.random() * 50),
+        Wednesday: Math.floor(Math.random() * 50),
+        Thursday: Math.floor(Math.random() * 50),
+        Friday: Math.floor(Math.random() * 50),
+        Saturday: Math.floor(Math.random() * 50)
       }
     };
     
-    return NextResponse.json(analytics);
+    // Calculate audience growth rate (mock calculation)
+    const growthRate = (Math.random() * 5 + 2).toFixed(1); // 2-7% growth rate
+    
+    // Prepare response
+    const response = {
+      demographics: {
+        age: ageDemographics,
+        gender: genderDemographics,
+        location: locationDemographics
+      },
+      engagement: {
+        patterns: engagementPatterns,
+        growthRate: parseFloat(growthRate)
+      },
+      metrics: {
+        totalFollowers: followerCount,
+        activeFollowers: Math.floor(followerCount * 0.7), // 70% active followers
+        engagementRate: (Math.random() * 5 + 2).toFixed(1) // 2-7% engagement rate
+      }
+    };
+    
+    // Cache the response
+    cacheService.set(cacheKey, response);
+    
+    return NextResponse.json(response, {
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=300' // 5 minutes
+      }
+    });
   } catch (error: any) {
     logDebug('Error fetching audience analytics:', error);
     
-    // For build purposes, return a mock response
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({
-        followerCount: 12500,
-        demographics: {
-          age: [
-            { name: "18-24", value: 15 },
-            { name: "25-34", value: 30 },
-            { name: "35-44", value: 25 },
-            { name: "45-54", value: 18 },
-            { name: "55+", value: 12 }
-          ],
-          platforms: [
-            { name: "Mobile", value: 65 },
-            { name: "Desktop", value: 30 },
-            { name: "Tablet", value: 5 }
-          ],
-          sources: [
-            { name: "Social Media", value: 40 },
-            { name: "Direct", value: 25 },
-            { name: "Search", value: 20 },
-            { name: "Referral", value: 10 },
-            { name: "Email", value: 5 }
-          ]
-        },
-        engagement: {
-          times: {
-            morning: 25,
-            afternoon: 35,
-            evening: 30,
-            night: 10
-          },
-          topDays: ['Wednesday', 'Thursday', 'Saturday'],
-          bestTime: '2:00 PM - 4:00 PM'
-        },
-        growth: {
-          followers: 5.2,
-          engagement: 3.8
-        }
-      });
+    // Handle rate limiting
+    if (error.response?.status === 429) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      );
     }
     
-    // Provide a more user-friendly error message
-    const errorMessage = error.details?.error_description || 
-                       error.message || 
-                       'Failed to fetch audience analytics';
-    
-    return NextResponse.json({
-      error: error.code || 'FETCH_ERROR',
-      message: errorMessage
-    }, { status: error.code === 'RATE_LIMIT' ? 429 : 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch audience analytics' },
+      { status: 500 }
+    );
   }
 } 
