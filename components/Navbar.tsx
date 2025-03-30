@@ -156,7 +156,7 @@ export default function Navbar() {
                   >
                     <span className="flex items-center gap-2">
                       <BarChart2 className="w-4 h-4" />
-                      Analytics
+                      Profile
                     </span>
                   </Link>
                   {isXAuthorized ? (

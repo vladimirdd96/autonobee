@@ -138,17 +138,6 @@ const audienceData = {
 };
 
 export default function Analytics() {
-  const { hasBeeNFT, nftTier } = useWallet();
-  
-  // Check if user has access to basic analytics (requires at least basic tier)
-  const hasBasicAccess = hasBeeNFT && nftTier !== null;
-  
-  // Check if user has access to advanced analytics (requires pro or enterprise tier)
-  const hasAdvancedAccess = hasBeeNFT && (nftTier === 'pro' || nftTier === 'enterprise');
-  
-  // Check if user has access to all analytics (requires enterprise tier)
-  const hasFullAccess = hasBeeNFT && nftTier === 'enterprise';
-
   return (
     <Layout>
       <div className="min-h-screen bg-background overflow-hidden">
@@ -160,99 +149,75 @@ export default function Analytics() {
             </Sparkles>
           </h1>
 
-          {/* Basic Analytics Section */}
-          <GatedSection 
-            hasAccess={hasBasicAccess} 
-            message="You need a Basic tier NFT to access analytics features."
-            requiredTier="basic"
-            buttonAction="mint"
-          >
-            {/* Performance Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {performanceMetrics.map((metric, index) => (
-                <CardContainer key={index} className="inter-var">
-                  <CardBody className="bg-background/20 backdrop-blur-sm border border-primary/10 relative group/card dark:hover:shadow-2xl dark:hover:shadow-primary/20/[0.2] dark:bg-black dark:border-white/[0.2] border-black/[0.2] w-full rounded-xl p-6">
-                    <CardItem
-                      translateZ={50}
-                      className="text-xl font-bold text-accent"
-                    >
-                      {metric.label}
-                    </CardItem>
-                    <CardItem
-                      as="p"
-                      translateZ={60}
-                      className="text-accent/80 text-sm mt-2"
-                    >
-                      {metric.value}
-                    </CardItem>
-                    <CardItem
-                      translateZ={40}
-                      className="w-full mt-4"
-                    >
-                      <div className="h-2 bg-background/30 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary rounded-full transition-all duration-500"
-                          style={{ width: `${metric.percentage}%` }}
-                        />
-                      </div>
-                    </CardItem>
-                  </CardBody>
-                </CardContainer>
-              ))}
-            </div>
-
-            {/* Pro Analytics Section */}
-            <GatedSection 
-              hasAccess={hasAdvancedAccess} 
-              message="You need a Pro tier NFT to access advanced analytics features."
-              requiredTier="pro"
-              buttonAction="mint"
-            >
-              {/* Engagement Chart */}
-              <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 mb-8">
-                <h2 className="text-xl font-bold text-accent mb-4">Engagement Over Time</h2>
-                <div className="h-[400px]">
-                  {/* Chart component will go here */}
-                </div>
-              </div>
-
-              {/* Enterprise Analytics Section */}
-              <GatedSection 
-                hasAccess={hasFullAccess} 
-                message="You need an Enterprise tier NFT to access these premium analytics features."
-                requiredTier="enterprise"
-                buttonAction="mint"
-              >
-                {/* Top Posts */}
-                <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6">
-                  <h2 className="text-xl font-bold text-accent mb-4">Top Performing Posts</h2>
-                  <div className="space-y-4">
-                    {topPosts.map((post, index) => (
+          {/* Performance Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {performanceMetrics.map((metric, index) => (
+              <CardContainer key={index} className="inter-var">
+                <CardBody className="bg-background/20 backdrop-blur-sm border border-primary/10 relative group/card dark:hover:shadow-2xl dark:hover:shadow-primary/20/[0.2] dark:bg-black dark:border-white/[0.2] border-black/[0.2] w-full rounded-xl p-6">
+                  <CardItem
+                    translateZ={50}
+                    className="text-xl font-bold text-accent"
+                  >
+                    {metric.label}
+                  </CardItem>
+                  <CardItem
+                    as="p"
+                    translateZ={60}
+                    className="text-accent/80 text-sm mt-2"
+                  >
+                    {metric.value}
+                  </CardItem>
+                  <CardItem
+                    translateZ={40}
+                    className="w-full mt-4"
+                  >
+                    <div className="h-2 bg-background/30 rounded-full overflow-hidden">
                       <div 
-                        key={index}
-                        className="flex items-center justify-between p-4 bg-background/30 rounded-lg border border-accent/10"
-                      >
-                        <div className="flex-1">
-                          <p className="text-accent font-medium">{post.content}</p>
-                          <p className="text-accent/60 text-sm mt-1">{post.date}</p>
-                        </div>
-                        <div className="flex space-x-6">
-                          <div className="text-right">
-                            <p className="text-accent/60 text-xs">Engagement</p>
-                            <p className="text-accent font-medium">{post.engagement}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-accent/60 text-xs">Reach</p>
-                            <p className="text-accent font-medium">{post.reach}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        className="h-full bg-primary rounded-full transition-all duration-500"
+                        style={{ width: `${metric.percentage}%` }}
+                      />
+                    </div>
+                  </CardItem>
+                </CardBody>
+              </CardContainer>
+            ))}
+          </div>
+
+          {/* Engagement Chart */}
+          <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 mb-8">
+            <h2 className="text-xl font-bold text-accent mb-4">Engagement Over Time</h2>
+            <div className="h-[400px]">
+              {/* Chart component will go here */}
+            </div>
+          </div>
+
+          {/* Top Posts */}
+          <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-accent mb-4">Top Performing Posts</h2>
+            <div className="space-y-4">
+              {topPosts.map((post, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between p-4 bg-background/30 rounded-lg border border-accent/10"
+                >
+                  <div className="flex-1">
+                    <p className="text-accent font-medium">{post.content}</p>
+                    <p className="text-accent/60 text-sm mt-1">{post.date}</p>
+                  </div>
+                  <div className="flex space-x-6">
+                    <div className="text-right">
+                      <p className="text-accent/60 text-xs">Engagement</p>
+                      <p className="text-accent font-medium">{post.engagement}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-accent/60 text-xs">Reach</p>
+                      <p className="text-accent font-medium">{post.reach}</p>
+                    </div>
                   </div>
                 </div>
-              </GatedSection>
-            </GatedSection>
-          </GatedSection>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </Layout>

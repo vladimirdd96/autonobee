@@ -7,17 +7,20 @@ const replicate = new Replicate({
 
 export async function POST(req: Request) {
   try {
-    const { topic, title, keywords, tone, contentType } = await req.json();
+    const { topic, title, keywords, tone, contentType, content } = await req.json();
 
-    if (!topic) {
+    // Use content as topic if topic is not provided
+    const imageTopic = topic || content;
+
+    if (!imageTopic) {
       return NextResponse.json(
-        { error: 'Topic is required' },
+        { error: 'Topic or content is required for image generation' },
         { status: 400 }
       );
     }
 
     // Construct a detailed prompt using all available context
-    const prompt = `${tone} ${contentType} post about ${topic}${title ? ` titled "${title}"` : ''}${keywords ? ` with keywords: ${keywords}` : ''}. Professional, high-quality, engaging social media image.`;
+    const prompt = `${tone} ${contentType} post about ${imageTopic}${title ? ` titled "${title}"` : ''}${keywords ? ` with keywords: ${keywords}` : ''}. Professional, high-quality, engaging social media image.`;
 
     console.log('Generating image with prompt:', prompt);
 

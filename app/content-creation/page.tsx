@@ -13,7 +13,7 @@ import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { useAuth } from '@/contexts/AuthContext';
-import { Lock, Settings, Loader2, Wand2 } from 'lucide-react';
+import { Lock, Settings, Loader2, Wand2, Copy } from 'lucide-react';
 import JSZip from 'jszip';
 
 interface FormData {
@@ -256,7 +256,7 @@ export default function ContentCreation() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          topic: formData.topic,
+          topic: formData.topic || formData.content,
           title: formData.title,
           keywords: formData.keywords,
           tone: formData.tone,
@@ -727,7 +727,7 @@ export default function ContentCreation() {
                   <div className="w-full">
                     <div className={`bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 ${showAdvancedSettings ? 'min-h-[1000px]' : 'min-h-[600px]'} transition-all duration-300`}>
                       <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Content Type - Moved to compact form */}
+                        {/* Content Type */}
                         <div className="space-y-4">
                           <label className="block text-accent font-medium">Content Type</label>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -771,6 +771,24 @@ export default function ContentCreation() {
                           />
                         </div>
 
+                        {/* Image Generation Toggle */}
+                        <div className="flex items-center justify-between">
+                          <label className="text-accent font-medium">Generate Image</label>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, generateImage: !prev.generateImage }))}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              formData.generateImage ? 'bg-primary' : 'bg-accent/20'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                                formData.generateImage ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
                         {/* Advanced Settings Toggle */}
                         <div className="flex items-center justify-between">
                           <button
@@ -803,24 +821,93 @@ export default function ContentCreation() {
                         {/* Advanced Settings */}
                         <div className={`space-y-4 transition-all duration-300 ease-in-out ${showAdvancedSettings ? 'opacity-100 max-h-[2000px]' : 'opacity-0 max-h-0 overflow-hidden'}`}>
                           {formData.contentType === "twitter" && (
-                            <div className="space-y-4">
-                              <label className="block text-accent font-medium">Post Template</label>
-                              <div className="grid grid-cols-2 gap-3">
-                                {["announcement", "question", "tip", "poll"].map((template) => (
-                                  <div 
-                                    key={template} 
-                                    onClick={() => setFormData(prev => ({ ...prev, twitterTemplate: template }))}
-                                    className={`cursor-pointer p-3 rounded-lg transition-all text-center capitalize ${
-                                      formData.twitterTemplate === template 
-                                        ? 'bg-primary/20 border-2 border-primary/50' 
-                                        : 'bg-background/30 border border-accent/10'
-                                    }`}
-                                  >
-                                    <span className="text-accent/80">{template}</span>
-                                  </div>
-                                ))}
+                            <>
+                              {/* Topic and Keywords */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <label className="block text-accent font-medium">Topic</label>
+                                  <input
+                                    type="text"
+                                    name="topic"
+                                    value={formData.topic}
+                                    onChange={handleChange}
+                                    className="w-full bg-background/30 border border-accent/10 rounded-lg p-3 text-accent placeholder-accent/50 focus:outline-none focus:border-primary/50"
+                                    placeholder="Enter topic (optional, will use content if not provided)..."
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="block text-accent font-medium">Keywords</label>
+                                  <input
+                                    type="text"
+                                    name="keywords"
+                                    value={formData.keywords}
+                                    onChange={handleChange}
+                                    className="w-full bg-background/30 border border-accent/10 rounded-lg p-3 text-accent placeholder-accent/50 focus:outline-none focus:border-primary/50"
+                                    placeholder="Enter keywords (comma-separated)..."
+                                  />
+                                </div>
                               </div>
-                            </div>
+
+                              {/* Tone Selection */}
+                              <div className="space-y-2">
+                                <label className="block text-accent font-medium">Tone</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                  {toneOptions.map((tone) => (
+                                    <div
+                                      key={tone}
+                                      onClick={() => handleRadioChange(tone)}
+                                      className={`cursor-pointer p-3 rounded-lg transition-all text-center ${
+                                        formData.tone === tone
+                                          ? 'bg-primary/20 border-2 border-primary/50'
+                                          : 'bg-background/30 border border-accent/10'
+                                      }`}
+                                    >
+                                      <span className="text-accent/80">{tone}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Length Selection */}
+                              <div className="space-y-2">
+                                <label className="block text-accent font-medium">Length</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                  {["short", "medium", "long"].map((length) => (
+                                    <div
+                                      key={length}
+                                      onClick={() => setFormData(prev => ({ ...prev, length }))}
+                                      className={`cursor-pointer p-3 rounded-lg transition-all text-center capitalize ${
+                                        formData.length === length
+                                          ? 'bg-primary/20 border-2 border-primary/50'
+                                          : 'bg-background/30 border border-accent/10'
+                                      }`}
+                                    >
+                                      <span className="text-accent/80">{length}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Post Template */}
+                              <div className="space-y-4">
+                                <label className="block text-accent font-medium">Post Template</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                  {["announcement", "question", "tip", "poll"].map((template) => (
+                                    <div 
+                                      key={template} 
+                                      onClick={() => setFormData(prev => ({ ...prev, twitterTemplate: template }))}
+                                      className={`cursor-pointer p-3 rounded-lg transition-all text-center capitalize ${
+                                        formData.twitterTemplate === template 
+                                          ? 'bg-primary/20 border-2 border-primary/50' 
+                                          : 'bg-background/30 border border-accent/10'
+                                      }`}
+                                    >
+                                      <span className="text-accent/80">{template}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </>
                           )}
                         </div>
                       </form>
@@ -833,7 +920,80 @@ export default function ContentCreation() {
                   <div className="bg-background/20 backdrop-blur-sm border border-primary/10 rounded-xl p-6 min-h-[600px]">
                     <h2 className="text-xl font-bold text-accent mb-4">Preview</h2>
                     <div className="space-y-4">
-                      {/* Preview content will go here */}
+                      {isGenerating ? (
+                        <div className="flex flex-col items-center justify-center h-full space-y-4">
+                          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                          <p className="text-accent/80">Generating content...</p>
+                        </div>
+                      ) : generatedContent ? (
+                        <div className="space-y-4">
+                          <div className="bg-background/30 rounded-lg p-4">
+                            <p className="text-accent whitespace-pre-wrap">{generatedContent}</p>
+                            <div className="mt-2 text-sm text-accent/60">
+                              Character count: {charCount}
+                            </div>
+                          </div>
+
+                          {generatedImageUrl && (
+                            <div className="relative aspect-square w-full overflow-hidden rounded-lg">
+                              <Image
+                                src={generatedImageUrl}
+                                alt="Generated content"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleCopy}
+                              className="flex-1 px-4 py-2 bg-primary/20 text-primary rounded-lg font-medium hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Copy className="w-4 h-4" />
+                              Copy
+                            </button>
+                            <button
+                              onClick={handleDownload}
+                              className="flex-1 px-4 py-2 bg-primary/20 text-primary rounded-lg font-medium hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+                            >
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                              </svg>
+                              Download
+                            </button>
+                          </div>
+
+                          {formData.contentType === "twitter" && (
+                            <button
+                              onClick={handlePostToX}
+                              disabled={isPosting || !isXAuthorized}
+                              className="w-full px-4 py-2 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isPosting ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Posting...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                  </svg>
+                                  Post to X
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full space-y-4">
+                          <Wand2 className="w-8 h-8 text-accent/40" />
+                          <p className="text-accent/60">Generated content will appear here</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
