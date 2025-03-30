@@ -1,4 +1,4 @@
-import { Connection, Keypair, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, clusterApiUrl, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import {
   Metaplex,
   keypairIdentity,
@@ -18,6 +18,14 @@ import bs58 from 'bs58';
 const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('devnet');
 const NETWORK = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+const PAYMENT_WALLET = process.env.NEXT_PUBLIC_PAYMENT_WALLET || '14t71QqSWySpMDeV9WXdjMTgMhs5LBDmx2L1p9xqqgam';
+
+// Price configuration
+const TIER_PRICES = {
+  basic: 0.1,    // 0.1 SOL
+  pro: 0.5,      // 0.5 SOL
+  enterprise: 1.0 // 1.0 SOL
+};
 
 // Rate limiting settings
 let lastRequestTime = 0;
@@ -28,11 +36,17 @@ const connectionPool: { [key: string]: Connection } = {};
 function getConnection(): Connection {
   // Create connection if needed
   if (!connectionPool['default']) {
-    connectionPool['default'] = new Connection(SOLANA_RPC_URL, {
-      commitment: 'confirmed',
+    const connectionConfig = {
+      commitment: 'confirmed' as const,
       disableRetryOnRateLimit: false,
       confirmTransactionInitialTimeout: 60000, // 60 seconds
-    });
+      wsEndpoint: NETWORK === 'mainnet-beta' 
+        ? 'wss://nameless-icy-isle.solana-mainnet.quiknode.pro/d63d9168c52aeba91e307bd1ec369930e2b96999/'
+        : undefined,
+    };
+
+    console.log(`Initializing Solana connection for network: ${NETWORK}`);
+    connectionPool['default'] = new Connection(SOLANA_RPC_URL, connectionConfig);
   }
   
   return connectionPool['default'];
@@ -85,11 +99,31 @@ export async function prepareNFTTransaction(
   }
 
   try {
+    console.log(`Preparing NFT transaction on network: ${NETWORK}`);
+    
     // Setup Metaplex with mock storage to avoid Bundlr issues
-    const connection = new Connection(SOLANA_RPC_URL);
+    const connection = getConnection();
     const metaplex = Metaplex.make(connection)
       .use(walletAdapterIdentity(wallet))
       .use(mockStorage()); // Use mock storage instead of Bundlr
+
+    // Get the price for the selected tier
+    const price = TIER_PRICES[tier];
+    console.log(`NFT price for ${tier} tier: ${price} SOL`);
+
+    // Create payment transaction
+    const paymentTransaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: wallet.publicKey,
+        toPubkey: new PublicKey(PAYMENT_WALLET),
+        lamports: price * LAMPORTS_PER_SOL
+      })
+    );
+
+    // Get recent blockhash and add it to the payment transaction
+    const { blockhash } = await connection.getLatestBlockhash();
+    paymentTransaction.recentBlockhash = blockhash;
+    paymentTransaction.feePayer = wallet.publicKey;
 
     // Create NFT metadata
     const metadata: NFTMetadata = {
@@ -128,12 +162,18 @@ export async function prepareNFTTransaction(
       symbol: metadata.symbol,
       creators: [{ address: new PublicKey(wallet.publicKey.toString()), share: 100 }],
       isMutable: true,
+      maxSupply: 1, // Ensure only one NFT can be minted
+      collection: null, // No collection for now
+      collectionAuthority: null, // No collection authority for now
+      isCollection: false,
+      mintAuthority: wallet, // Pass the wallet as the mint authority
     });
 
     return {
       transactionBuilder,
       metaplex,
-      uri
+      uri,
+      paymentTransaction
     };
   } catch (error) {
     console.error('Error preparing NFT transaction:', error);
@@ -152,12 +192,14 @@ export async function mintNFTFromServer(
   }
 
   try {
+    console.log(`Minting NFT on network: ${NETWORK}`);
+    
     // Create keypair from private key (using bs58 to decode base58)
     const secretKey = bs58.decode(privateKeyBase58);
     const keypair = Keypair.fromSecretKey(secretKey);
 
     // Setup Metaplex with the creator's keypair and mock storage
-    const connection = new Connection(SOLANA_RPC_URL);
+    const connection = getConnection();
     const metaplex = Metaplex.make(connection)
       .use(keypairIdentity(keypair))
       .use(mockStorage()); // Use mock storage instead of Bundlr
@@ -198,6 +240,11 @@ export async function mintNFTFromServer(
       symbol: metadata.symbol,
       creators: [{ address: keypair.publicKey, share: 100 }],
       isMutable: true,
+      maxSupply: 1, // Ensure only one NFT can be minted
+      collection: null, // No collection for now
+      collectionAuthority: null, // No collection authority for now
+      isCollection: false,
+      mintAuthority: keypair, // Pass the keypair as the mint authority
     });
     
     console.log('NFT created:', nft.address.toString());

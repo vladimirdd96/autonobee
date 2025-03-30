@@ -9,6 +9,7 @@ import { AnimatedGradientText } from '@/components/aceternity/animated-gradient-
 import { cn } from '@/lib/utils';
 import { MeteorEffect } from '@/components/aceternity/meteor-effect';
 import { simulateNFTOwnership } from '@/utils/dev-helper';
+import { prepareNFTTransaction } from '@/utils/metaplex';
 
 export default function MintPage() {
   const [selectedTier, setSelectedTier] = useState<'basic' | 'pro' | 'enterprise' | null>(null);
@@ -59,29 +60,34 @@ export default function MintPage() {
   }, [isConnected, hasBeeNFT, nftTier, selectedTier]);
 
   const handleMint = async () => {
-    if (!selectedTier) return;
+    if (!selectedTier || !publicKey) return;
 
     try {
       setIsMinting(true);
       setMintError(null);
       
-      // Call the API to mint the NFT
-      const response = await fetch('/api/mint-nft', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          address: publicKey,
-          tier: selectedTier
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to mint NFT');
+      // Get the wallet from window.phantom
+      const wallet = (window as any).phantom?.solana;
+      if (!wallet) {
+        throw new Error('Phantom wallet not found');
       }
+
+      // Prepare the NFT transaction
+      const { transactionBuilder, metaplex, paymentTransaction } = await prepareNFTTransaction(
+        publicKey.toString(),
+        selectedTier,
+        wallet
+      );
+
+      // First, send the payment transaction
+      console.log('Sending payment transaction...');
+      const paymentResponse = await wallet.signAndSendTransaction(paymentTransaction);
+      console.log('Payment transaction sent:', paymentResponse.signature);
+
+      // Then, build and send the NFT transaction
+      console.log('Sending NFT transaction...');
+      const { response } = await transactionBuilder.sendAndConfirm(metaplex);
+      console.log('NFT transaction sent:', response.signature);
       
       // Check NFT ownership after minting - with retries
       console.log('Mint successful, checking NFT status...');
