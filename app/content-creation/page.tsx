@@ -15,6 +15,8 @@ import { cn } from "@/utils/cn";
 import { useAuth } from '@/contexts/AuthContext';
 import { Lock, Settings, Loader2, Wand2, Copy } from 'lucide-react';
 import JSZip from 'jszip';
+import NFTSubscriptionOverlay from '@/components/NFTSubscriptionOverlay';
+import { useWallet } from '@/contexts/WalletContext';
 
 interface FormData {
   title: string;
@@ -186,6 +188,7 @@ const SuccessNotification = ({ message, onClose }: { message: string; onClose: (
 
 export default function ContentCreation() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showNFTOverlay, setShowNFTOverlay] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     title: "",
     contentType: "twitter",
@@ -221,6 +224,7 @@ export default function ContentCreation() {
   const [postError, setPostError] = useState<string | null>(null);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { hasBeeNFT } = useWallet();
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -598,6 +602,11 @@ export default function ContentCreation() {
       return;
     }
 
+    if (!hasBeeNFT) {
+      setShowNFTOverlay(true);
+      return;
+    }
+
     setIsPosting(true);
     setPostError(null);
 
@@ -675,7 +684,7 @@ export default function ContentCreation() {
     } finally {
       setIsPosting(false);
     }
-  }, [generatedContent, generatedImageUrl, isXAuthorized]);
+  }, [generatedContent, generatedImageUrl, isXAuthorized, hasBeeNFT]);
 
   const toggleAdvancedSettings = useCallback(() => {
     setShowAdvancedSettings(prev => !prev);
@@ -711,6 +720,8 @@ export default function ContentCreation() {
               </div>
             </div>
           )}
+          
+          {showNFTOverlay && <NFTSubscriptionOverlay onClose={() => setShowNFTOverlay(false)} />}
           
           <div className="min-h-screen bg-background overflow-hidden">
             <MeteorEffect count={5} color="#f9b72d" className="z-0" />
