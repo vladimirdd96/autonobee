@@ -13,10 +13,11 @@ import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { useAuth } from '@/contexts/AuthContext';
-import { Lock, Settings, Loader2, Wand2, Copy } from 'lucide-react';
+import { Lock, Settings, Loader2, Wand2, Copy, Check } from 'lucide-react';
 import JSZip from 'jszip';
 import NFTSubscriptionOverlay from '@/components/NFTSubscriptionOverlay';
 import { useWallet } from '@/contexts/WalletContext';
+import Link from 'next/link';
 
 interface FormData {
   title: string;
@@ -225,7 +226,33 @@ export default function ContentCreation() {
   const [postError, setPostError] = useState<string | null>(null);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const { hasBeeNFT } = useWallet();
+  const { hasBeeNFT, isConnected, connect } = useWallet();
+
+  // Add new state for saved content
+  const [savedContent, setSavedContent] = useState<{
+    content: string;
+    imageUrl: string | null;
+    formData: FormData;
+  } | null>(null);
+
+  // Add effect to check for saved content on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('savedPostContent');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSavedContent(parsed);
+        // Restore the content
+        setGeneratedContent(parsed.content);
+        setGeneratedImageUrl(parsed.imageUrl);
+        setFormData(parsed.formData);
+        // Clear the saved content from storage
+        localStorage.removeItem('savedPostContent');
+      } catch (error) {
+        console.error('Error restoring saved content:', error);
+      }
+    }
+  }, []);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -695,6 +722,17 @@ export default function ContentCreation() {
     setSuccessMessage(null);
   }, []);
 
+  // Add handleGetSubscription function
+  const handleGetSubscription = useCallback(() => {
+    // Save the current content state
+    const contentToSave = {
+      content: generatedContent,
+      imageUrl: generatedImageUrl,
+      formData: formData
+    };
+    localStorage.setItem('savedPostContent', JSON.stringify(contentToSave));
+  }, [generatedContent, generatedImageUrl, formData]);
+
   return (
     <>
       {error && <ErrorNotification message={error} onClose={handleDismissError} />}
@@ -703,32 +741,88 @@ export default function ContentCreation() {
         <div className="relative">
           {showXAuthOverlay && (
             <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center">
-              <div className="text-center p-8">
+              <div className="text-center p-8 max-w-md">
                 <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Lock className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-accent mb-2">X Authorization Required</h3>
-                <p className="text-accent/80 mb-6">Please authorize your X account to post content.</p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => {
-                      authorizeX();
-                      setShowXAuthOverlay(false);
-                    }}
-                    className="px-6 py-3 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 w-full"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
-                    Authorize
-                  </button>
-                  <button
-                    onClick={() => setShowXAuthOverlay(false)}
-                    className="px-6 py-3 bg-accent/10 text-accent rounded-lg font-medium hover:bg-accent/20 transition-colors w-full"
-                  >
-                    Cancel
-                  </button>
+                <h3 className="text-xl font-bold text-accent mb-2">Post to X Requirements</h3>
+                <p className="text-accent/80 mb-6">To post directly to your X account, you need to complete the following steps:</p>
+                
+                <div className="flex flex-col gap-4 mb-6">
+                  {/* Step 1: Wallet Connection */}
+                  <div className={`p-4 rounded-lg border ${isConnected ? 'border-green-500/30 bg-green-500/10' : 'border-accent/20 bg-accent/5'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-accent">1. Connect Wallet</h4>
+                      {isConnected ? (
+                        <Check className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <span className="text-accent/60">Required</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-accent/70 mb-3">Connect your Solana wallet to proceed</p>
+                    {!isConnected && (
+                      <button
+                        onClick={connect}
+                        className="w-full px-4 py-2 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        Connect Wallet
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Step 2: NFT Subscription */}
+                  <div className={`p-4 rounded-lg border ${hasBeeNFT ? 'border-green-500/30 bg-green-500/10' : 'border-accent/20 bg-accent/5'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-accent">2. NFT Subscription</h4>
+                      {hasBeeNFT ? (
+                        <Check className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <span className="text-accent/60">Required</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-accent/70 mb-3">Subscribe with an NFT to unlock posting capabilities</p>
+                    {!hasBeeNFT && (
+                      <Link
+                        href="/mint"
+                        onClick={handleGetSubscription}
+                        className="block w-full px-4 py-2 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors text-center"
+                      >
+                        Get Subscription
+                      </Link>
+                    )}
+                  </div>
+
+                  {/* Step 3: X Authorization */}
+                  <div className={`p-4 rounded-lg border ${isXAuthorized ? 'border-green-500/30 bg-green-500/10' : 'border-accent/20 bg-accent/5'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-accent">3. X Authorization</h4>
+                      {isXAuthorized ? (
+                        <Check className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <span className="text-accent/60">Required</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-accent/70 mb-3">Authorize your X account to enable posting</p>
+                    {!isXAuthorized && (
+                      <button
+                        onClick={() => {
+                          authorizeX();
+                          setShowXAuthOverlay(false);
+                        }}
+                        className="w-full px-4 py-2 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        Authorize X
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                <button
+                  onClick={() => setShowXAuthOverlay(false)}
+                  className="px-6 py-3 bg-accent/10 text-accent rounded-lg font-medium hover:bg-accent/20 transition-colors w-full"
+                >
+                  Close
+                </button>
               </div>
             </div>
           )}
