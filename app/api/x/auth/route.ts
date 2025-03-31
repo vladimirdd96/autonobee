@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import axios from 'axios';
 import crypto from 'crypto';
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/auth/x
  * Initiates X.com OAuth flow
@@ -92,20 +95,4 @@ async function generateCodeChallenge(codeVerifier: string): Promise<string> {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
-}
-
-/**
- * GET /api/auth/x/check
- * Checks if user is authenticated with X
- */
-export async function GET_check(request: NextRequest) {
-  try {
-    // Check if the user has an x_auth cookie
-    const isAuthenticated = !!cookies().get('x_auth')?.value;
-    
-    return NextResponse.json({ isAuthenticated });
-  } catch (error) {
-    console.error('Error checking X auth status:', error);
-    return NextResponse.json({ isAuthenticated: false });
-  }
 } 

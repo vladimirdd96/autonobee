@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { cookies } from 'next/headers';
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const cookieStore = cookies();

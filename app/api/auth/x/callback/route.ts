@@ -7,6 +7,9 @@ const baseUrl = process.env.NGROK_STATIC_DOMAIN
   ? `https://${process.env.NGROK_STATIC_DOMAIN}` 
   : process.env.NEXT_PUBLIC_APP_URL;
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');

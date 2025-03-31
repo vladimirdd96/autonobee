@@ -34,6 +34,9 @@ interface DatesMap {
   [key: string]: number;
 }
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/x/profile
  * Returns authenticated user profile data from X.com

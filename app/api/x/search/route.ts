@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import axios from 'axios';
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/x/search
  * Searches for X.com users

@@ -20,6 +20,9 @@ interface TrendResponse {
   }>;
 }
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/x/trends
  * Returns trending topics from X.com

@@ -59,6 +59,9 @@ interface FormattedTweet {
   }>;
 }
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/x/timeline
  * Fetches the user's X.com timeline

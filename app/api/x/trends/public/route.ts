@@ -21,6 +21,9 @@ interface TrendsResponse {
   location: LocationData;
 }
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/x/trends/public
  * Returns public X.com trends

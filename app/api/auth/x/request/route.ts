@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import xApiAuth from '../utils/XApiAuth';
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   const cookieStore = cookies();
   const userId = cookieStore.get('x_user_id')?.value;

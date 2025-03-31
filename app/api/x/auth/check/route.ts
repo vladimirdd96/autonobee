@@ -1,41 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/x/auth/check
- * Checks if the user is authenticated with X.com
+ * Checks if user is authenticated with X
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check auth cookie
-    const isAuthenticated = cookies().get('x_auth')?.value === 'true';
+    // Check if the user has an x_auth cookie
+    const isAuthenticated = !!cookies().get('x_auth')?.value;
     
-    // Get user info
-    const userId = cookies().get('x_user_id')?.value;
-    const username = cookies().get('x_username')?.value;
-    const name = cookies().get('x_name')?.value;
-    const profileImage = cookies().get('x_profile_image')?.value;
-    
-    // Return auth status and user info if authenticated
-    if (isAuthenticated && userId) {
-      return NextResponse.json({
-        isAuthenticated: true,
-        user: {
-          id: userId,
-          username,
-          name,
-          profileImage
-        }
-      });
-    }
-    
-    // Return false if not authenticated
-    return NextResponse.json({ isAuthenticated: false });
+    return NextResponse.json({ isAuthenticated });
   } catch (error) {
     console.error('Error checking X auth status:', error);
-    return NextResponse.json(
-      { isAuthenticated: false, error: 'Failed to check auth status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ isAuthenticated: false });
   }
 } 

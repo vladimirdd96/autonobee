@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/x/auth/callback
@@ -135,7 +138,7 @@ export async function GET(request: NextRequest) {
     console.error('Error handling OAuth callback:', error);
     
     // Log detailed error information
-    if (error.response) {
+    if (error instanceof AxiosError && error.response) {
       console.error('Error response:', error.response.data);
     }
     
