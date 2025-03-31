@@ -224,6 +224,7 @@ export default function Trends() {
           <GatedSection 
             hasAccess={hasToken}
             message="Connect your X account to access premium analytics and trends."
+            buttonAction="connect"
           >
             {/* Time Period Selector */}
             <div className="mb-8 flex items-center justify-between">

@@ -3,7 +3,7 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
 import Link from 'next/link';
-import { useWallet } from '@/contexts/WalletContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface GatedSectionProps {
   hasAccess: boolean;
@@ -16,20 +16,14 @@ interface GatedSectionProps {
 export default function GatedSection({ 
   hasAccess, 
   children, 
-  message = "You need an NFT to access this feature.",
+  message = "Connect your X account to access this feature.",
   requiredTier,
   buttonAction = 'connect'
 }: GatedSectionProps) {
-  const { isConnected, connect, hasBeeNFT, nftTier } = useWallet();
+  const { isXAuthorized, authorizeX } = useAuth();
   
   if (hasAccess) {
     return <>{children}</>;
-  }
-  
-  // Generate the appropriate message based on the required tier
-  let displayMessage = message;
-  if (requiredTier && hasBeeNFT) {
-    displayMessage = `You need a ${requiredTier === 'basic' ? 'Basic' : requiredTier === 'pro' ? 'Pro' : 'Enterprise'} tier NFT to access this feature. Your current tier is ${nftTier || 'unknown'}.`;
   }
   
   return (
@@ -39,16 +33,16 @@ export default function GatedSection({
           <Lock className="text-primary w-8 h-8" />
         </div>
         <h3 className="text-xl font-bold text-accent mb-2">Access Restricted</h3>
-        <p className="text-accent/80 mb-6">{displayMessage}</p>
+        <p className="text-accent/80 mb-6">{message}</p>
         
-        {!isConnected && buttonAction === 'connect' ? (
+        {!isXAuthorized && buttonAction === 'connect' ? (
           <button 
-            onClick={connect}
+            onClick={authorizeX}
             className="px-6 py-3 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors"
           >
-            Connect Wallet
+            Connect X Account
           </button>
-        ) : buttonAction === 'mint' || (isConnected && !hasBeeNFT) ? (
+        ) : buttonAction === 'mint' ? (
           <Link href="/mint" className="px-6 py-3 bg-primary text-background rounded-lg font-medium hover:bg-primary/90 transition-colors">
             Get NFT Access
           </Link>
