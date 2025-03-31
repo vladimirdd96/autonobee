@@ -154,7 +154,7 @@ export default function Profile() {
             <BackgroundBeams />
           </div>
           <div className="relative z-10 flex items-center justify-center min-h-screen p-8">
-            <div className="bg-background/30 backdrop-blur-sm border border-primary/10 p-8 rounded-xl text-center max-w-md">
+            <div className="flex flex-col items-center justify-center bg-background/30 backdrop-blur-sm border border-primary/10 p-8 rounded-xl text-center max-w-md">
               <h1 className="text-2xl font-bold text-accent mb-4">Connect Your X Account</h1>
               <p className="text-accent/80 mb-6">Connect your X account to view your profile analytics and insights.</p>
               <MovingBorder
